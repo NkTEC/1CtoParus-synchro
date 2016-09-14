@@ -594,7 +594,7 @@ sub xml_import
 				agnlist_name = Query.FieldByname("AGNNAME").value
 				Query.Close
 				
-				Query.SQL.Text="select * from v_agnacc where AGNACC='"&nodeNode.selectSingleNode("НомерСчета").text&"' and AGNRN='"&agnlist_rn&"' and SBANKFCODEACC='"&agnbank_mnemo&"' order by STRCODE"
+				Query.SQL.Text="select * from v_agnacc where AGNACC='"&nodeNode.selectSingleNode("НомерСчета").text&"' and AGNRN='"&agnlist_rn&"' and SBANKCODEACC='"&agnbank_mnemo&"' order by STRCODE"
 				Query.Open
 				Query.Last
 				
