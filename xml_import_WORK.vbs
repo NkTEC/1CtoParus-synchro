@@ -1,27 +1,27 @@
 
 sub xml_import
-	Dim contragents 'коллекцию XMLDOMNodeList всех элементов заданного типа
-	Dim cAgent 'элемент коллекции Контрагенты
+	Dim contragents 'РєРѕР»Р»РµРєС†РёСЋ XMLDOMNodeList РІСЃРµС… СЌР»РµРјРµРЅС‚РѕРІ Р·Р°РґР°РЅРЅРѕРіРѕ С‚РёРїР°
+	Dim cAgent 'СЌР»РµРјРµРЅС‚ РєРѕР»Р»РµРєС†РёРё РљРѕРЅС‚СЂР°РіРµРЅС‚С‹
 	Dim agncounter
 
-	' Загружаем XML-документ
+	' Р—Р°РіСЂСѓР¶Р°РµРј XML-РґРѕРєСѓРјРµРЅС‚
 	Set xmlParser = CreateObject("Msxml2.DOMDocument")
 	xmlParser.async = False
 	xmlParser.load "\\10.130.32.52\Tatneft\Mess_UH_20100.xml"
 
-	' Проверяем на ошибки загрузки
+	' РџСЂРѕРІРµСЂСЏРµРј РЅР° РѕС€РёР±РєРё Р·Р°РіСЂСѓР·РєРё
 	If xmlParser.parseError.errorCode Then
 			MsgBox xmlParser.parseError.Reason
 	End If
 
 	Set fso = CreateObject("Scripting.FileSystemObject")
 	Set MyFile = fso.OpenTextFile("\\10.130.32.52\Tatneft\Exch_logs\1C-Parus_exchange.log", 8, True)
-	MyFile.Write(vbNewLine&"**********************************************************************************************************************************"&vbNewLine&vbTab&now()&vbTab&" Начало импорта данных из 1С:УХ в ИСУ Парус"&vbNewLine)
+	MyFile.Write(vbNewLine&"**********************************************************************************************************************************"&vbNewLine&vbTab&now()&vbTab&" РќР°С‡Р°Р»Рѕ РёРјРїРѕСЂС‚Р° РґР°РЅРЅС‹С… РёР· 1РЎ:РЈРҐ РІ РРЎРЈ РџР°СЂСѓСЃ"&vbNewLine)
 
-	' Находим узел Контрагенты
-	Set contragents = xmlParser.selectNodes("//Контрагенты/Строки")
+	' РќР°С…РѕРґРёРј СѓР·РµР» РљРѕРЅС‚СЂР°РіРµРЅС‚С‹
+	Set contragents = xmlParser.selectNodes("//РљРѕРЅС‚СЂР°РіРµРЅС‚С‹/РЎС‚СЂРѕРєРё")
 	If contragents.length > 0 then
-		' ПЕРЕБИРАЕМ СПИСОК КОНТРАГЕНТОВ В XML-ДОКУМЕНТЕ
+		' РџР•Р Р•Р‘РР РђР•Рњ РЎРџРРЎРћРљ РљРћРќРўР РђР“Р•РќРўРћР’ Р’ XML-Р”РћРљРЈРњР•РќРўР•
 		object_counter=0
 		T_Agn_error = False
 		For Each nodeNode In contragents
@@ -36,9 +36,9 @@ sub xml_import
 			
 			object_counter=object_counter+1
 			
-			SAPcode = RTrim(nodeNode.selectSingleNode("Код").text)
-			INN = nodeNode.selectSingleNode("ИНН").text
-			KPP = nodeNode.selectSingleNode("КПП").text
+			SAPcode = RTrim(nodeNode.selectSingleNode("РљРѕРґ").text)
+			INN = nodeNode.selectSingleNode("РРќРќ").text
+			KPP = nodeNode.selectSingleNode("РљРџРџ").text
 			
 			if INN="1651057954" then
 				divider="/"
@@ -46,18 +46,18 @@ sub xml_import
 				divider="^"
 			end if
 
-			If nodeNode.selectSingleNode("ЮридическоеФизическоеЛицо").text = "ЮридическоеЛицо" Then
+			If nodeNode.selectSingleNode("Р®СЂРёРґРёС‡РµСЃРєРѕРµР¤РёР·РёС‡РµСЃРєРѕРµР›РёС†Рѕ").text = "Р®СЂРёРґРёС‡РµСЃРєРѕРµР›РёС†Рѕ" Then
 					agntype=0
 			Else
 					agntype=1
 			end If
 
-			' НАЙДЕМ RN КОНТРАГЕНТА ПО КОДУ SAP В ТАБЛИЦЕ СВОЙСТВ ОБЪЕКТОВ
-			Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='"&SAPcode&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - код свойства "Код SAP" (1ИЗМЕНИТЬ ПОСЛЕ ПЕРЕНОСА В ПРОДУКТИВ)
+			' РќРђР™Р”Р•Рњ RN РљРћРќРўР РђР“Р•РќРўРђ РџРћ РљРћР”РЈ SAP Р’ РўРђР‘Р›РР¦Р• РЎР’РћР™РЎРўР’ РћР‘РЄР•РљРўРћР’
+			Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='"&SAPcode&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP" (1РР—РњР•РќРРўР¬ РџРћРЎР›Р• РџР•Р Р•РќРћРЎРђ Р’ РџР РћР”РЈРљРўРР’)
 			Query.Open
 			If Query.IsEmpty then
 
-				' ВДРУГ У НАС УЖЕ ЕСТЬ КОНТРАГЕНТ С ТАКИМ ЖЕ ИНН/КПП НО БЕЗ КОДА SAP
+				' Р’Р”Р РЈР“ РЈ РќРђРЎ РЈР–Р• Р•РЎРўР¬ РљРћРќРўР РђР“Р•РќРў РЎ РўРђРљРРњ Р–Р• РРќРќ/РљРџРџ РќРћ Р‘Р•Р— РљРћР”Рђ SAP
 				If KPP="" then
 					CaQuery=Query
 					CaQuery.Sql.Text = "select AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"'"
@@ -69,21 +69,21 @@ sub xml_import
 				end if
 
 				If CaQuery.IsEmpty then
-					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - создаю нового контрагента."&vbNewLine)
+					MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ РєРѕРЅС‚СЂР°РіРµРЅС‚ СЃ РєРѕРґРѕРј SAP "&SAPcode&" ("&nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&") - СЃРѕР·РґР°СЋ РЅРѕРІРѕРіРѕ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°."&vbNewLine)
 					
-					'ДОБАВИМ ЗАПИСЬ О НОВОМ КОНТРАГЕНТЕ
+					'Р”РћР‘РђР’РРњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ РљРћРќРўР РђР“Р•РќРўР•
 					StoredProc.StoredProcName="P_AGNLIST_INSERT"
-					StoredProc.ParamByName("nCOMPANY").value=42903                                        'код подразделения
-					StoredProc.ParamByName("CRN").value=155332                                                'код каталога
+					StoredProc.ParamByName("nCOMPANY").value=42903                                        'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+					StoredProc.ParamByName("CRN").value=155332                                                'РєРѕРґ РєР°С‚Р°Р»РѕРіР°
 					StoredProc.ParamByName("AGNTYPE").value=agntype
-					StoredProc.ParamByName("AGNNAME").value=nodeNode.selectSingleNode("Наименование").text
-					StoredProc.ParamByName("sFULLNAME").value=nodeNode.selectSingleNode("НаименованиеПолное").text
+					StoredProc.ParamByName("AGNNAME").value=nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text
+					StoredProc.ParamByName("sFULLNAME").value=nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµРџРѕР»РЅРѕРµ").text
 					StoredProc.ParamByName("AGNIDNUMB").value=INN
-					StoredProc.ParamByName("sREASON_CODE").value=nodeNode.selectSingleNode("КПП").text
-					StoredProc.ParamByName("sOGRN").value=nodeNode.selectSingleNode("ОГРН").text
-					StoredProc.ParamByName("ORGCODE").value=nodeNode.selectSingleNode("ОКПО").text
+					StoredProc.ParamByName("sREASON_CODE").value=nodeNode.selectSingleNode("РљРџРџ").text
+					StoredProc.ParamByName("sOGRN").value=nodeNode.selectSingleNode("РћР“Р Рќ").text
+					StoredProc.ParamByName("ORGCODE").value=nodeNode.selectSingleNode("РћРљРџРћ").text
 					StoredProc.ParamByName("AGNABBR").value=INN&divider&KPP
-					StoredProc.ParamByName("PHONE").value=nodeNode.selectSingleNode("Телефон").text
+					StoredProc.ParamByName("PHONE").value=nodeNode.selectSingleNode("РўРµР»РµС„РѕРЅ").text
 					StoredProc.ParamByName("EMP").value=0
 					StoredProc.ParamByName("nSEX").value=0
 					StoredProc.ParamByName("nRESIDENT_SIGN").value=0
@@ -91,44 +91,44 @@ sub xml_import
 					StoredProc.ExecProc
 					newRN = StoredProc.ParamByName("nRN").value
 
-					' ЗАПИШЕМ КОД SAP В СВОЙСТВО ОБЪЕКТА
-					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'процедурка для записи доп свойства
-					StoredProc.ParamByName("PROPERTY").value="КодКонтр1С"
+					' Р—РђРџРРЁР•Рњ РљРћР” SAP Р’ РЎР’РћР™РЎРўР’Рћ РћР‘РЄР•РљРўРђ
+					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'РїСЂРѕС†РµРґСѓСЂРєР° РґР»СЏ Р·Р°РїРёСЃРё РґРѕРї СЃРІРѕР№СЃС‚РІР°
+					StoredProc.ParamByName("PROPERTY").value="РљРѕРґРљРѕРЅС‚СЂ1РЎ"
 					StoredProc.ParamByName("UNITCODE").value="AGNLIST"
 					StoredProc.ParamByName("RN_SOTR").value=newRN
 					StoredProc.ParamByName("ST_VAL").value=SAPcode
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
 
-					'ДОБАВИМ ЗАПИСЬ ОБ АДРЕСЕ НОВОГО КОНТРАГЕНТА
-					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'процедурка для записи доп свойства
-					StoredProc.ParamByName("PROPERTY").value="АдрСтрокЮрид1С"
+					'Р”РћР‘РђР’РРњ Р—РђРџРРЎР¬ РћР‘ РђР”Р Р•РЎР• РќРћР’РћР“Рћ РљРћРќРўР РђР“Р•РќРўРђ
+					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'РїСЂРѕС†РµРґСѓСЂРєР° РґР»СЏ Р·Р°РїРёСЃРё РґРѕРї СЃРІРѕР№СЃС‚РІР°
+					StoredProc.ParamByName("PROPERTY").value="РђРґСЂРЎС‚СЂРѕРєР®СЂРёРґ1РЎ"
 					StoredProc.ParamByName("UNITCODE").value="AGNLIST"
 					StoredProc.ParamByName("RN_SOTR").value=newRN
-					StoredProc.ParamByName("ST_VAL").value=nodeNode.selectSingleNode("АдресЮридический").text
+					StoredProc.ParamByName("ST_VAL").value=nodeNode.selectSingleNode("РђРґСЂРµСЃР®СЂРёРґРёС‡РµСЃРєРёР№").text
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
-					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'процедурка для записи доп свойства
-					StoredProc.ParamByName("PROPERTY").value="АдрСтрокПочт1С"
+					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'РїСЂРѕС†РµРґСѓСЂРєР° РґР»СЏ Р·Р°РїРёСЃРё РґРѕРї СЃРІРѕР№СЃС‚РІР°
+					StoredProc.ParamByName("PROPERTY").value="РђРґСЂРЎС‚СЂРѕРєРџРѕС‡С‚1РЎ"
 					StoredProc.ParamByName("UNITCODE").value="AGNLIST"
 					StoredProc.ParamByName("RN_SOTR").value=newRN
-					StoredProc.ParamByName("ST_VAL").value=nodeNode.selectSingleNode("АдресПочтовый").text
+					StoredProc.ParamByName("ST_VAL").value=nodeNode.selectSingleNode("РђРґСЂРµСЃРџРѕС‡С‚РѕРІС‹Р№").text
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
 				else
-					' ИНН/КПП СОВПАДАЕТ, А КОДА SAP НЕТ - НЕ ПОРЯДОК
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В таблице найден контрагент с такими же ИНН/КПП, но без кода SAP "&SAPcode&" - контрагент не создан, необходимо проверить вручную: "&INN&"/"&KPP&" ("&CaQuery.FieldByname("AGNNAME").value&")"&vbNewLine)
+					' РРќРќ/РљРџРџ РЎРћР’РџРђР”РђР•Рў, Рђ РљРћР”Рђ SAP РќР•Рў - РќР• РџРћР РЇР”РћРљ
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’ С‚Р°Р±Р»РёС†Рµ РЅР°Р№РґРµРЅ РєРѕРЅС‚СЂР°РіРµРЅС‚ СЃ С‚Р°РєРёРјРё Р¶Рµ РРќРќ/РљРџРџ, РЅРѕ Р±РµР· РєРѕРґР° SAP "&SAPcode&" - РєРѕРЅС‚СЂР°РіРµРЅС‚ РЅРµ СЃРѕР·РґР°РЅ, РЅРµРѕР±С…РѕРґРёРјРѕ РїСЂРѕРІРµСЂРёС‚СЊ РІСЂСѓС‡РЅСѓСЋ: "&INN&"/"&KPP&" ("&CaQuery.FieldByname("AGNNAME").value&")"&vbNewLine)
 					T_Agn_error = True
 				end If
 				CaQuery.Close
-			else        'найдена запись с нашим кодом SAP
+			else        'РЅР°Р№РґРµРЅР° Р·Р°РїРёСЃСЊ СЃ РЅР°С€РёРј РєРѕРґРѕРј SAP
 
-				' НАЙДЕМ КОНТРАГЕНТА В ТАБЛИЦЕ ПО RN
+				' РќРђР™Р”Р•Рњ РљРћРќРўР РђР“Р•РќРўРђ Р’ РўРђР‘Р›РР¦Р• РџРћ RN
 				CaQuery=Query
 				CaQuery.Sql.Text = "select * from AGNLIST where RN='"&Query.FieldByname("UNIT_RN").value&"'"
 				CaQuery.Open
 
-				' ПОДСЧИТАЕМ КОЛИЧЕСТВО СОВПАВШИХ КОНТРАГЕНТОВ И СОСТАВИМ ИХ СПИСОК НА ВСЯКИЙ СЛУЧАЙ
+				' РџРћР”РЎР§РРўРђР•Рњ РљРћР›РР§Р•РЎРўР’Рћ РЎРћР’РџРђР’РЁРРҐ РљРћРќРўР РђР“Р•РќРўРћР’ Р РЎРћРЎРўРђР’РРњ РРҐ РЎРџРРЎРћРљ РќРђ Р’РЎРЇРљРР™ РЎР›РЈР§РђР™
 				agncounter = 0
 				DoubledAgentsString=""
 				do while not CaQuery.EOF
@@ -137,20 +137,20 @@ sub xml_import
 					CaQuery.next
 				loop
 				If agncounter>1 then
-					'РУГНЕМСЯ НА ДУБЛИРОВАНИЕ КОДОВ SAP И СДЕЛАЕМ ОТМЕТКУ В ЛОГЕ
-					MyFile.Write("ERROR "&now()&vbTab&" В Парус найдено несколько контрагентов с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&"),  - необходимо проверить вручную, объект не обновлен:"&vbNewLine)
+					'Р РЈР“РќР•РњРЎРЇ РќРђ Р”РЈР‘Р›РР РћР’РђРќРР• РљРћР”РћР’ SAP Р РЎР”Р•Р›РђР•Рњ РћРўРњР•РўРљРЈ Р’ Р›РћР“Р•
+					MyFile.Write("ERROR "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅРѕ РЅРµСЃРєРѕР»СЊРєРѕ РєРѕРЅС‚СЂР°РіРµРЅС‚РѕРІ СЃ РєРѕРґРѕРј SAP "&SAPcode&" ("&nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&"),  - РЅРµРѕР±С…РѕРґРёРјРѕ РїСЂРѕРІРµСЂРёС‚СЊ РІСЂСѓС‡РЅСѓСЋ, РѕР±СЉРµРєС‚ РЅРµ РѕР±РЅРѕРІР»РµРЅ:"&vbNewLine)
 					T_Agn_error = True
 					MyFile.Write(DoubledAgentsString)
 				elseIf agncounter=1 Then
-					MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - обновляю данные контрагента."&vbNewLine)
+					MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ РєРѕРЅС‚СЂР°РіРµРЅС‚ СЃ РєРѕРґРѕРј SAP "&SAPcode&" ("&nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&") - РѕР±РЅРѕРІР»СЏСЋ РґР°РЅРЅС‹Рµ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°."&vbNewLine)
 
 					
 					RN					= CaQuery.FieldByname("RN").value
 					ECONCODE			= CaQuery.FieldByname("ECONCODE").value
-					If nodeNode.selectSingleNode("ОКПО").text = "" then
+					If nodeNode.selectSingleNode("РћРљРџРћ").text = "" then
 						ORGCODE			= CaQuery.FieldByname("ORGCODE").value
 					else
-						ORGCODE			= nodeNode.selectSingleNode("ОКПО").text
+						ORGCODE			= nodeNode.selectSingleNode("РћРљРџРћ").text
 					end if
 					AGNFAMILYNAME		= CaQuery.FieldByname("AGNFAMILYNAME").value
 					AGNFIRSTNAME		= CaQuery.FieldByname("AGNFIRSTNAME").value
@@ -173,18 +173,18 @@ sub xml_import
 					EMPPOST_AC			= CaQuery.FieldByname("EMPPOST_AC").value
 					EMPPOST_ABL			= CaQuery.FieldByname("EMPPOST_ABL").value
 					AGNBURN				= CaQuery.FieldByname("AGNBURN").value
-					If nodeNode.selectSingleNode("Телефон").text = "" then
+					If nodeNode.selectSingleNode("РўРµР»РµС„РѕРЅ").text = "" then
 						PHONE			= CaQuery.FieldByname("PHONE").value
 					else
-						PHONE			= nodeNode.selectSingleNode("Телефон").text
+						PHONE			= nodeNode.selectSingleNode("РўРµР»РµС„РѕРЅ").text
 					end if
 					PHONE2				= CaQuery.FieldByname("PHONE2").value
 					FAX					= CaQuery.FieldByname("FAX").value
 					TELEX				= CaQuery.FieldByname("TELEX").value
-					If nodeNode.selectSingleNode("ЭлектроннаяПочта").text = "" then
+					If nodeNode.selectSingleNode("Р­Р»РµРєС‚СЂРѕРЅРЅР°СЏРџРѕС‡С‚Р°").text = "" then
 						MAIL			= CaQuery.FieldByname("MAIL").value
 					else
-						MAIL			= nodeNode.selectSingleNode("ЭлектроннаяПочта").text
+						MAIL			= nodeNode.selectSingleNode("Р­Р»РµРєС‚СЂРѕРЅРЅР°СЏРџРѕС‡С‚Р°").text
 					end if
 					IMAGE				= CaQuery.FieldByname("IMAGE").value
 					DISCDATE			= CaQuery.FieldByname("DISCDATE").value
@@ -205,16 +205,16 @@ sub xml_import
 					PFR_FILL_DATE		= CaQuery.FieldByname("PFR_FILL_DATE").value
 					PFR_REG_DATE		= CaQuery.FieldByname("PFR_REG_DATE").value
 					PFR_REG_NUMB		= CaQuery.FieldByname("PFR_REG_NUMB").value
-					If nodeNode.selectSingleNode("ОГРН").text = "" then
+					If nodeNode.selectSingleNode("РћР“Р Рќ").text = "" then
 						OGRN			= CaQuery.FieldByname("OGRN").value
 					else
-						OGRN			= nodeNode.selectSingleNode("ОГРН").text
+						OGRN			= nodeNode.selectSingleNode("РћР“Р Рќ").text
 					end if
 					OKFS				= CaQuery.FieldByname("OKFS").value
-					If nodeNode.selectSingleNode("ОКОПФ").text = "" then
+					If nodeNode.selectSingleNode("РћРљРћРџР¤").text = "" then
 						OKOPF			= CaQuery.FieldByname("OKOPF").value
 					else
-						OKOPF			= nodeNode.selectSingleNode("ОКОПФ").text
+						OKOPF			= nodeNode.selectSingleNode("РћРљРћРџР¤").text
 					end if
 					TFOMS				= CaQuery.FieldByname("TFOMS").value
 					FSS_REG_NUMB		= CaQuery.FieldByname("FSS_REG_NUMB").value
@@ -223,7 +223,7 @@ sub xml_import
 					OKTMO				= CaQuery.FieldByname("OKTMO").value
 					INN_CITIZENSHIP		= CaQuery.FieldByname("INN_CITIZENSHIP").value
 					
-					'УСТАНОВИМ В NULL ВСЕ ЗНАЧЕНИЯ 0
+					'РЈРЎРўРђРќРћР’РРњ Р’ NULL Р’РЎР• Р—РќРђР§Р•РќРРЇ 0
 					If PROPFORM = 0 then
 						propform = NULL
 					else
@@ -263,16 +263,16 @@ sub xml_import
 						OKTMO = NULL
 					end if
 										
-					'ОБНОВИМ ЗАПИСЬ О КОНТРАГЕНТЕ
+					'РћР‘РќРћР’РРњ Р—РђРџРРЎР¬ Рћ РљРћРќРўР РђР“Р•РќРўР•
 					StoredProc.StoredProcName="P_AGNLIST_UPDATE"
-					StoredProc.ParamByName("nCOMPANY").value		= 42903	'код подразделения
+					StoredProc.ParamByName("nCOMPANY").value		= 42903	'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
 					StoredProc.ParamByName("RN").value				= RN
-					StoredProc.ParamByName("AGNABBR").value			= nodeNode.selectSingleNode("ИНН").text&divider&nodeNode.selectSingleNode("КПП").text
+					StoredProc.ParamByName("AGNABBR").value			= nodeNode.selectSingleNode("РРќРќ").text&divider&nodeNode.selectSingleNode("РљРџРџ").text
 					StoredProc.ParamByName("AGNTYPE").value			= agntype
-					StoredProc.ParamByName("AGNNAME").value			= nodeNode.selectSingleNode("Наименование").text
-					StoredProc.ParamByName("AGNIDNUMB").value		= nodeNode.selectSingleNode("ИНН").text
+					StoredProc.ParamByName("AGNNAME").value			= nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text
+					StoredProc.ParamByName("AGNIDNUMB").value		= nodeNode.selectSingleNode("РРќРќ").text
 					StoredProc.ParamByName("ECONCODE").value		= ECONCODE
-					StoredProc.ParamByName("ORGCODE").value			= nodeNode.selectSingleNode("ОКПО").text
+					StoredProc.ParamByName("ORGCODE").value			= nodeNode.selectSingleNode("РћРљРџРћ").text
 					StoredProc.ParamByName("AGNFAMILYNAME").value	= AGNFAMILYNAME
 					StoredProc.ParamByName("AGNFIRSTNAME").value	= AGNFIRSTNAME
 					StoredProc.ParamByName("AGNLASTNAME").value		= AGNLASTNAME
@@ -308,7 +308,7 @@ sub xml_import
 					StoredProc.ParamByName("sMEDPOLICY_SER").value	= MEDPOLICY_SER
 					StoredProc.ParamByName("sMEDPOLICY_NUMB").value	= MEDPOLICY_NUMB
 					StoredProc.ParamByName("sPROPFORM").value		= propform
-					StoredProc.ParamByName("sREASON_CODE").value	= nodeNode.selectSingleNode("КПП").text
+					StoredProc.ParamByName("sREASON_CODE").value	= nodeNode.selectSingleNode("РљРџРџ").text
 					StoredProc.ParamByName("nRESIDENT_SIGN").value	= 0
 					StoredProc.ParamByName("sTAXPSTATUS").value		= taxpstatus
 					StoredProc.ParamByName("sOGRN").value			= OGRN
@@ -323,7 +323,7 @@ sub xml_import
 					StoredProc.ParamByName("dPFR_FILL_DATE").value	= PFR_FILL_DATE
 					StoredProc.ParamByName("dPFR_REG_DATE").value	= PFR_REG_DATE
 					StoredProc.ParamByName("sPFR_REG_NUMB").value	= PFR_REG_NUMB
-					StoredProc.ParamByName("sFULLNAME").value		= nodeNode.selectSingleNode("НаименованиеПолное").text
+					StoredProc.ParamByName("sFULLNAME").value		= nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµРџРѕР»РЅРѕРµ").text
 					StoredProc.ParamByName("sOKFS").value			= OKFS
 					StoredProc.ParamByName("sOKOPF").value			= OKOPF
 					StoredProc.ParamByName("sTFOMS").value			= TFOMS
@@ -335,19 +335,19 @@ sub xml_import
 					StoredProc.ParamByName("sINN_CITIZENSHIP").value= INN_CITIZENSHIP
 					StoredProc.ExecProc
 
-					'ОБНОВИМ ЗАПИСЬ ОБ АДРЕСЕ КОНТРАГЕНТА
-					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'процедурка для записи доп свойства
-					StoredProc.ParamByName("PROPERTY").value	= "АдрСтрокЮрид1С"
+					'РћР‘РќРћР’РРњ Р—РђРџРРЎР¬ РћР‘ РђР”Р Р•РЎР• РљРћРќРўР РђР“Р•РќРўРђ
+					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'РїСЂРѕС†РµРґСѓСЂРєР° РґР»СЏ Р·Р°РїРёСЃРё РґРѕРї СЃРІРѕР№СЃС‚РІР°
+					StoredProc.ParamByName("PROPERTY").value	= "РђРґСЂРЎС‚СЂРѕРєР®СЂРёРґ1РЎ"
 					StoredProc.ParamByName("UNITCODE").value	= "AGNLIST"
 					StoredProc.ParamByName("RN_SOTR").value		= RN
-					StoredProc.ParamByName("ST_VAL").value		= nodeNode.selectSingleNode("АдресЮридический").text
+					StoredProc.ParamByName("ST_VAL").value		= nodeNode.selectSingleNode("РђРґСЂРµСЃР®СЂРёРґРёС‡РµСЃРєРёР№").text
 					StoredProc.ParamByName("NUM_VAL").value		= NULL
 					StoredProc.ExecProc
-					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'процедурка для записи доп свойства
-					StoredProc.ParamByName("PROPERTY").value	= "АдрСтрокПочт1С"
+					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS" 'РїСЂРѕС†РµРґСѓСЂРєР° РґР»СЏ Р·Р°РїРёСЃРё РґРѕРї СЃРІРѕР№СЃС‚РІР°
+					StoredProc.ParamByName("PROPERTY").value	= "РђРґСЂРЎС‚СЂРѕРєРџРѕС‡С‚1РЎ"
 					StoredProc.ParamByName("UNITCODE").value	= "AGNLIST"
 					StoredProc.ParamByName("RN_SOTR").value		= RN
-					StoredProc.ParamByName("ST_VAL").value		= nodeNode.selectSingleNode("АдресПочтовый").text
+					StoredProc.ParamByName("ST_VAL").value		= nodeNode.selectSingleNode("РђРґСЂРµСЃРџРѕС‡С‚РѕРІС‹Р№").text
 					StoredProc.ParamByName("NUM_VAL").value		= NULL
 					StoredProc.ExecProc
 				end If
@@ -355,64 +355,64 @@ sub xml_import
 			end if
 			Query.Close
 		Next
-		MyFile.Write("INFO "&now()&vbTab&" Контрагенты загружены. Всего обработано: "& object_counter & vbNewLine&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" РљРѕРЅС‚СЂР°РіРµРЅС‚С‹ Р·Р°РіСЂСѓР¶РµРЅС‹. Р’СЃРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРѕ: "& object_counter & vbNewLine&vbNewLine)
 	else
-		MyFile.Write("INFO "&now()&vbTab&" В текущей выгрузке на найдено информации о контрагентах."&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р’ С‚РµРєСѓС‰РµР№ РІС‹РіСЂСѓР·РєРµ РЅР° РЅР°Р№РґРµРЅРѕ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°С…."&vbNewLine)
 	End if
 	
 	If T_Agn_error = True then
-		MsgBox "Загрузка контрагентов прошла с ошибкой. Проверьте журнал 1C-Parus_exchange.log"
+		MsgBox "Р—Р°РіСЂСѓР·РєР° РєРѕРЅС‚СЂР°РіРµРЅС‚РѕРІ РїСЂРѕС€Р»Р° СЃ РѕС€РёР±РєРѕР№. РџСЂРѕРІРµСЂСЊС‚Рµ Р¶СѓСЂРЅР°Р» 1C-Parus_exchange.log"
 		Exit Sub
 	end if
 
-	'НАХОДИМ УЗЕЛ "БАНКИ"
-	Set Banks = xmlParser.selectNodes("//Банки/Строки")
+	'РќРђРҐРћР”РРњ РЈР—Р•Р› "Р‘РђРќРљР"
+	Set Banks = xmlParser.selectNodes("//Р‘Р°РЅРєРё/РЎС‚СЂРѕРєРё")
 	If Banks.length > 0 then
-		'ПЕРЕБИРАЕМ СПИСОК БАНКОВ
+		'РџР•Р Р•Р‘РР РђР•Рњ РЎРџРРЎРћРљ Р‘РђРќРљРћР’
 		object_counter=0
 		For Each nodeNode In Banks
 			object_counter=object_counter+1
 			agnbank_rn	= NULL
 			
 			BankQuery=Query
-			BankQuery.Sql.Text = "select RN, AGNRN from AGNBANKS where BANKFCODEACC='"&nodeNode.selectSingleNode("БИК").text&"' and CRN='104583471'" 'ищем банки только в каталоге, отдельно созданном для банков из 1С
+			BankQuery.Sql.Text = "select RN, AGNRN from AGNBANKS where BANKFCODEACC='"&nodeNode.selectSingleNode("Р‘РРљ").text&"' and CRN='104583471'" 'РёС‰РµРј Р±Р°РЅРєРё С‚РѕР»СЊРєРѕ РІ РєР°С‚Р°Р»РѕРіРµ, РѕС‚РґРµР»СЊРЅРѕ СЃРѕР·РґР°РЅРЅРѕРј РґР»СЏ Р±Р°РЅРєРѕРІ РёР· 1РЎ
 			BankQuery.Open
 			agnbank_rn=BankQuery.FieldByname("RN").value
 			If BankQuery.IsEmpty Then
-				MyFile.Write("INFO "&now()&vbTab&" В Парус не найден банк с кодом БИК "&nodeNode.selectSingleNode("БИК").text&" ("&nodeNode.selectSingleNode("Наименование").text&") - создаю новый банк."&vbNewLine)
-				'ДОБАВИМ ЗАПИСЬ О НОВОМ КОНТРАГЕНТЕ-БАНКЕ
+				MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р±Р°РЅРє СЃ РєРѕРґРѕРј Р‘РРљ "&nodeNode.selectSingleNode("Р‘РРљ").text&" ("&nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&") - СЃРѕР·РґР°СЋ РЅРѕРІС‹Р№ Р±Р°РЅРє."&vbNewLine)
+				'Р”РћР‘РђР’РРњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ РљРћРќРўР РђР“Р•РќРўР•-Р‘РђРќРљР•
 				StoredProc.StoredProcName="P_AGNLIST_INSERT"
-				StoredProc.ParamByName("nCOMPANY").value=42903                                        'код подразделения
-				StoredProc.ParamByName("CRN").value=104582949                                        'код каталога с банками
+				StoredProc.ParamByName("nCOMPANY").value=42903                                        'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+				StoredProc.ParamByName("CRN").value=104582949                                        'РєРѕРґ РєР°С‚Р°Р»РѕРіР° СЃ Р±Р°РЅРєР°РјРё
 				StoredProc.ParamByName("AGNTYPE").value=0
-				StoredProc.ParamByName("AGNNAME").value=nodeNode.selectSingleNode("Наименование").text&", "&nodeNode.selectSingleNode("Город").text
-				StoredProc.ParamByName("AGNABBR").value="БАНК_"&nodeNode.selectSingleNode("БИК").text
+				StoredProc.ParamByName("AGNNAME").value=nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&", "&nodeNode.selectSingleNode("Р“РѕСЂРѕРґ").text
+				StoredProc.ParamByName("AGNABBR").value="Р‘РђРќРљ_"&nodeNode.selectSingleNode("Р‘РРљ").text
 				StoredProc.ParamByName("EMP").value=0
 				StoredProc.ParamByName("nSEX").value=0
 				StoredProc.ParamByName("nRESIDENT_SIGN").value=0
 				StoredProc.ParamByName("nCOEFFIC").value=0
 				StoredProc.ExecProc
 
-				'ДОБАВИМ ЗАПИСЬ О НОВОМ ЭЛЕМЕНТЕ СЛОВАРЯ "БАНКОВСКИЕ УЧРЕЖДЕНИЯ"
+				'Р”РћР‘РђР’РРњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ Р­Р›Р•РњР•РќРўР• РЎР›РћР’РђР РЇ "Р‘РђРќРљРћР’РЎРљРР• РЈР§Р Р•Р–Р”Р•РќРРЇ"
 				StoredProc.StoredProcName="P_AGNBANKS_INSERT"
-				StoredProc.ParamByName("nCOMPANY").value=42903                                        'код подразделения
-				StoredProc.ParamByName("nCRN").value=104583471                                        'код каталога с банками
-				StoredProc.ParamByName("sBANKFCODEACC").value=nodeNode.selectSingleNode("БИК").text
-				StoredProc.ParamByName("sBANKACC").value=nodeNode.selectSingleNode("КоррСчет").text
-				StoredProc.ParamByName("sCODE").value="БАНК_"&nodeNode.selectSingleNode("БИК").text
+				StoredProc.ParamByName("nCOMPANY").value=42903                                        'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+				StoredProc.ParamByName("nCRN").value=104583471                                        'РєРѕРґ РєР°С‚Р°Р»РѕРіР° СЃ Р±Р°РЅРєР°РјРё
+				StoredProc.ParamByName("sBANKFCODEACC").value=nodeNode.selectSingleNode("Р‘РРљ").text
+				StoredProc.ParamByName("sBANKACC").value=nodeNode.selectSingleNode("РљРѕСЂСЂРЎС‡РµС‚").text
+				StoredProc.ParamByName("sCODE").value="Р‘РђРќРљ_"&nodeNode.selectSingleNode("Р‘РРљ").text
 				StoredProc.ExecProc
 			else
-				MyFile.Write("INFO "&now()&vbTab&" В Парус найден банк с кодом БИК "&nodeNode.selectSingleNode("БИК").text&" ("&nodeNode.selectSingleNode("Наименование").text&") - обновляю существующий банк."&vbNewLine)
+				MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ Р±Р°РЅРє СЃ РєРѕРґРѕРј Р‘РРљ "&nodeNode.selectSingleNode("Р‘РРљ").text&" ("&nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&") - РѕР±РЅРѕРІР»СЏСЋ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р±Р°РЅРє."&vbNewLine)
 				bAgnQuery = Query
 				bAgnQuery.SQL.Text="select * from agnlist where RN='"&BankQuery.FieldByname("AGNRN").value&"'"
 				bAgnQuery.Open
 
-				REM 'ОБНОВИМ ЗАПИСЬ О КОНТРАГЕНТЕ-БАНКЕ
+				REM 'РћР‘РќРћР’РРњ Р—РђРџРРЎР¬ Рћ РљРћРќРўР РђР“Р•РќРўР•-Р‘РђРќРљР•
 				REM StoredProc.StoredProcName="P_AGNLIST_UPDATE"
-				REM StoredProc.ParamByName("RN").value=bAgnQuery.FieldByname("RN").value                                                'код контрагента
-				REM StoredProc.ParamByName("AGNABBR").value="БАНК_"&nodeNode.selectSingleNode("БИК").text
+				REM StoredProc.ParamByName("RN").value=bAgnQuery.FieldByname("RN").value                                                'РєРѕРґ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°
+				REM StoredProc.ParamByName("AGNABBR").value="Р‘РђРќРљ_"&nodeNode.selectSingleNode("Р‘РРљ").text
 				REM StoredProc.ParamByName("AGNTYPE").value=0
-				REM StoredProc.ParamByName("AGNNAME").value=nodeNode.selectSingleNode("Наименование").text&", "&nodeNode.selectSingleNode("Город").text
+				REM StoredProc.ParamByName("AGNNAME").value=nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&", "&nodeNode.selectSingleNode("Р“РѕСЂРѕРґ").text
 				REM StoredProc.ParamByName("EMP").value=0
 				REM StoredProc.ParamByName("nSEX").value=0
 				REM StoredProc.ParamByName("nRESIDENT_SIGN").value=0
@@ -420,7 +420,7 @@ sub xml_import
 				REM StoredProc.ExecProc
 				REM bAgnQuery.Close
 				
-				'УСТАНОВИМ В NULL ВСЕ ЗНАЧЕНИЯ 0
+				'РЈРЎРўРђРќРћР’РРњ Р’ NULL Р’РЎР• Р—РќРђР§Р•РќРРЇ 0
 				If Query.FieldByname("PROPFORM").value = 0 then
 					propform = NULL
 				else
@@ -463,11 +463,11 @@ sub xml_import
 				end if
 				
 				StoredProc.StoredProcName="P_AGNLIST_UPDATE"
-				StoredProc.ParamByName("nCOMPANY").value		= 42903	'код подразделения
-				StoredProc.ParamByName("RN").value				= bAgnQuery.FieldByname("RN").value	'код контрагента
-				StoredProc.ParamByName("AGNABBR").value			= "БАНК_"&nodeNode.selectSingleNode("БИК").text
+				StoredProc.ParamByName("nCOMPANY").value		= 42903	'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+				StoredProc.ParamByName("RN").value				= bAgnQuery.FieldByname("RN").value	'РєРѕРґ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°
+				StoredProc.ParamByName("AGNABBR").value			= "Р‘РђРќРљ_"&nodeNode.selectSingleNode("Р‘РРљ").text
 				StoredProc.ParamByName("AGNTYPE").value			= 0
-				StoredProc.ParamByName("AGNNAME").value			= nodeNode.selectSingleNode("Наименование").text&", "&nodeNode.selectSingleNode("Город").text
+				StoredProc.ParamByName("AGNNAME").value			= nodeNode.selectSingleNode("РќР°РёРјРµРЅРѕРІР°РЅРёРµ").text&", "&nodeNode.selectSingleNode("Р“РѕСЂРѕРґ").text
 				StoredProc.ParamByName("AGNIDNUMB").value		= bAgnQuery.FieldByname("AGNIDNUMB").value
 				StoredProc.ParamByName("ECONCODE").value		= bAgnQuery.FieldByname("ECONCODE").value
 				StoredProc.ParamByName("ORGCODE").value			= bAgnQuery.FieldByname("ORGCODE").value
@@ -535,13 +535,13 @@ sub xml_import
 
 				Query.SQL.Text = "select * from AGNBANKS where RN='"&agnbank_rn&"'"
 				Query.Open
-				'ОБНОВИМ ЗАПИСЬ ОБ ЭЛЕМЕНТЕ СЛОВАРЯ "БАНКОВСКИЕ УЧРЕЖДЕНИЯ"
+				'РћР‘РќРћР’РРњ Р—РђРџРРЎР¬ РћР‘ Р­Р›Р•РњР•РќРўР• РЎР›РћР’РђР РЇ "Р‘РђРќРљРћР’РЎРљРР• РЈР§Р Р•Р–Р”Р•РќРРЇ"
 				StoredProc.StoredProcName="P_AGNBANKS_UPDATE"
 				StoredProc.ParamByName("nCOMPANY").value		= 42903
 				StoredProc.ParamByName("nRN").value				= agnbank_rn
-				StoredProc.ParamByName("sBANKFCODEACC").value	= nodeNode.selectSingleNode("БИК").text
-				StoredProc.ParamByName("sBANKACC").value		= nodeNode.selectSingleNode("КоррСчет").text
-				StoredProc.ParamByName("sCODE").value			= "БАНК_"&nodeNode.selectSingleNode("БИК").text
+				StoredProc.ParamByName("sBANKFCODEACC").value	= nodeNode.selectSingleNode("Р‘РРљ").text
+				StoredProc.ParamByName("sBANKACC").value		= nodeNode.selectSingleNode("РљРѕСЂСЂРЎС‡РµС‚").text
+				StoredProc.ParamByName("sCODE").value			= "Р‘РђРќРљ_"&nodeNode.selectSingleNode("Р‘РРљ").text
 				StoredProc.ParamByName("sSWIFT").value			= Query.FieldByname("SWIFT").value
 				StoredProc.ParamByName("sMEMBER_CODE").value	= Query.FieldByname("MEMBER_CODE").value
 				StoredProc.ParamByName("sMEMBER_NAME").value	= Query.FieldByname("MEMBER_NAME").value
@@ -549,15 +549,15 @@ sub xml_import
 				StoredProc.ExecProc
 			end if
 		next
-		MyFile.Write("INFO "&now()&vbTab&" Банки загружены. Всего обработано: "& object_counter & vbNewLine&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р‘Р°РЅРєРё Р·Р°РіСЂСѓР¶РµРЅС‹. Р’СЃРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРѕ: "& object_counter & vbNewLine&vbNewLine)
 	else
-		MyFile.Write("INFO "&now()&vbTab&" В текущей выгрузке на найдено информации о банках."&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р’ С‚РµРєСѓС‰РµР№ РІС‹РіСЂСѓР·РєРµ РЅР° РЅР°Р№РґРµРЅРѕ РёРЅС„РѕСЂРјР°С†РёРё Рѕ Р±Р°РЅРєР°С…."&vbNewLine)
 	end if
 
-	'НАХОДИМ УЗЕЛ "СЧЕТА"
-	Set Accounts = xmlParser.selectNodes("//БанковскиеСчета/Строки")
+	'РќРђРҐРћР”РРњ РЈР—Р•Р› "РЎР§Р•РўРђ"
+	Set Accounts = xmlParser.selectNodes("//Р‘Р°РЅРєРѕРІСЃРєРёРµРЎС‡РµС‚Р°/РЎС‚СЂРѕРєРё")
 	If Accounts.length > 0 then
-		'ПЕРЕБИРАЕМ СПИСОК СЧЕТОВ
+		'РџР•Р Р•Р‘РР РђР•Рњ РЎРџРРЎРћРљ РЎР§Р•РўРћР’
 		object_counter=0
 		For Each nodeNode In Accounts
 			account_rn		= NULL
@@ -571,16 +571,16 @@ sub xml_import
 			
 			object_counter=object_counter+1
 					
-			'ПОЛУЧИМ RN КОНТРАГЕНТА ПО КОДУ SAP
-			Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&RTrim(nodeNode.selectSingleNode("Владелец").text)&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - код свойства "Код SAP"
+			'РџРћР›РЈР§РРњ RN РљРћРќРўР РђР“Р•РќРўРђ РџРћ РљРћР”РЈ SAP
+			Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&RTrim(nodeNode.selectSingleNode("Р’Р»Р°РґРµР»РµС†").text)&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP"
 			Query.Open
 			agnlist_rn=Query.FieldByname("UNIT_RN").value
 			Query.Close
 			
 			If not agnlist_rn=0 then
-				If not nodeNode.selectSingleNode("Банк").text=""  then
-					'ПОЛУЧИМ ДАННЫЕ БАНКА
-					Query.SQL.Text = "select SNAME, SBANKACC, SCODE from v_AGNBANKS where SCODE='БАНК_"&nodeNode.selectSingleNode("Банк").text&"'"
+				If not nodeNode.selectSingleNode("Р‘Р°РЅРє").text=""  then
+					'РџРћР›РЈР§РРњ Р”РђРќРќР«Р• Р‘РђРќРљРђ
+					Query.SQL.Text = "select SNAME, SBANKACC, SCODE from v_AGNBANKS where SCODE='Р‘РђРќРљ_"&nodeNode.selectSingleNode("Р‘Р°РЅРє").text&"'"
 					Query.Open
 					agnbank_mnemo = Query.FieldByname("SCODE").value
 				else
@@ -588,24 +588,24 @@ sub xml_import
 				end if
 				
 				
-				'ПОЛУЧИМ НАИМЕНОВАНИЕ КОНТРАГЕНТА ДЛЯ НАИМЕНОВАНИЯ СЧЕТА
+				'РџРћР›РЈР§РРњ РќРђРРњР•РќРћР’РђРќРР• РљРћРќРўР РђР“Р•РќРўРђ Р”Р›РЇ РќРђРРњР•РќРћР’РђРќРРЇ РЎР§Р•РўРђ
 				Query.SQL.Text= "select AGNNAME from AGNLIST where RN='"&agnlist_rn&"'"
 				Query.Open
 				agnlist_name = Query.FieldByname("AGNNAME").value
 				Query.Close
 				
-				Query.SQL.Text="select * from v_agnacc where AGNACC='"&nodeNode.selectSingleNode("НомерСчета").text&"' and AGNRN='"&agnlist_rn&"' and SBANKFCODEACC='"&agnbank_mnemo&"' order by STRCODE"
+				Query.SQL.Text="select * from v_agnacc where AGNACC='"&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&"' and AGNRN='"&agnlist_rn&"' and SBANKFCODEACC='"&agnbank_mnemo&"' order by STRCODE"
 				Query.Open
 				Query.Last
 				
 								
 				If Query.IsEmpty then 
-					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - создаю новый счет."&vbNewLine)
+					MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р±Р°РЅРєРѕРІСЃРєРёР№ СЃС‡РµС‚ СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&"  - СЃРѕР·РґР°СЋ РЅРѕРІС‹Р№ СЃС‡РµС‚."&vbNewLine)
 					
-					'НАЙДЕМ ПАРАМЕТР "КОД СТРОКИ"
+					'РќРђР™Р”Р•Рњ РџРђР РђРњР•РўР  "РљРћР” РЎРўР РћРљР"
 					StoredProc.StoredProcName="FIND_AGNACC_LASTCODE"
-					StoredProc.ParamByName("COMPANY").value	= 42903                                        'код подразделения
-					StoredProc.ParamByName("AGNRN").value	= agnlist_rn                                        'код контрагента
+					StoredProc.ParamByName("COMPANY").value	= 42903                                        'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+					StoredProc.ParamByName("AGNRN").value	= agnlist_rn                                        'РєРѕРґ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°
 					StoredProc.ExecProc
 					lastcode = CInt(StoredProc.ParamByName("STRCODE").value)
 					lastcode=lastcode+1
@@ -616,33 +616,33 @@ sub xml_import
 							counter=counter-1
 					loop
 
-					'СОЗДАЕМ ЗАПИСЬ О НОВОМ БАНКОВСКОМ СЧЕТЕ
+					'РЎРћР—Р”РђР•Рњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ Р‘РђРќРљРћР’РЎРљРћРњ РЎР§Р•РўР•
 					StoredProc.StoredProcName="P_AGNACC_INSERT"
-					StoredProc.ParamByName("nCOMPANY").value		= 42903                                        'код подразделения
-					StoredProc.ParamByName("nPRN").value			= agnlist_rn                                        'код контрагента
+					StoredProc.ParamByName("nCOMPANY").value		= 42903                                        'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+					StoredProc.ParamByName("nPRN").value			= agnlist_rn                                        'РєРѕРґ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°
 					StoredProc.ParamByName("sSTRCODE").value		= lastcode
-					StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("НомерСчета").text
+					StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text
 					StoredProc.ParamByName("sAGNNAMEACC").value		= agnlist_name
 					StoredProc.ParamByName("SAGNBANKS").value		= agnbank_mnemo
 					StoredProc.ParamByName("NACCESS_FLAG").value	= 1
 					StoredProc.ExecProc
 					newRN = StoredProc.ParamByName("nRN").value
 
-					REM 'ВНЕСЕМ КОД 1С В СВОЙСТВА
-					REM 'StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'процедурка для записи доп свойства
-					REM 'StoredProc.ParamByName("PROPERTY").value="СчетКод1С"
+					REM 'Р’РќР•РЎР•Рњ РљРћР” 1РЎ Р’ РЎР’РћР™РЎРўР’Рђ
+					REM 'StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'РїСЂРѕС†РµРґСѓСЂРєР° РґР»СЏ Р·Р°РїРёСЃРё РґРѕРї СЃРІРѕР№СЃС‚РІР°
+					REM 'StoredProc.ParamByName("PROPERTY").value="РЎС‡РµС‚РљРѕРґ1РЎ"
 					REM 'StoredProc.ParamByName("UNITCODE").value="ContragentsBankAttrs"
 					REM 'StoredProc.ParamByName("RN_SOTR").value=newRN
-					REM 'StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+					REM 'StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)
 					REM 'StoredProc.ParamByName("NUM_VAL").value=NULL
 					REM 'StoredProc.ExecProc
 					Query.Close
 				else
-					MyFile.Write("INFO "&now()&vbTab&" В Парус найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - обновляю существующий счет."&vbNewLine)
+					MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ Р±Р°РЅРєРѕРІСЃРєРёР№ СЃС‡РµС‚ СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&"  - РѕР±РЅРѕРІР»СЏСЋ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ СЃС‡РµС‚."&vbNewLine)
 					
 					account_rn = Query.FieldByname("RN").value
 
-					'НАЙДЕМ НОМЕР СТРОКИ ДЛЯ ТЕКУЩЕЙ ЗАПИСИ О БАНКОВСКОМ СЧЕТЕ
+					'РќРђР™Р”Р•Рњ РќРћРњР•Р  РЎРўР РћРљР Р”Р›РЇ РўР•РљРЈР©Р•Р™ Р—РђРџРРЎР Рћ Р‘РђРќРљРћР’РЎРљРћРњ РЎР§Р•РўР•
 					Query.SQL.Text = "select * from AGNACC where RN = '"&account_rn&"'"
 					Query.Open
 					
@@ -666,7 +666,7 @@ sub xml_import
 					INTERMEDIARY	= Query.FieldByname("INTERMEDIARY").value
 					INTERMED_ACC	= Query.FieldByname("INTERMED_ACC").value
 					
-					'УСТАНОВИМ В NULL ВСЕ ЗНАЧЕНИЯ 0
+					'РЈРЎРўРђРќРћР’РРњ Р’ NULL Р’РЎР• Р—РќРђР§Р•РќРРЇ 0
 					If BANKACC_TYPE = 0 then
 						BANKACC_TYPE = NULL
 					else
@@ -697,12 +697,12 @@ sub xml_import
 						INTERMED_ACC = NULL
 					end if	
 
-					'ОБНОВИМ ЗАПИСЬ О БАНКОВСКОМ СЧЕТЕ
+					'РћР‘РќРћР’РРњ Р—РђРџРРЎР¬ Рћ Р‘РђРќРљРћР’РЎРљРћРњ РЎР§Р•РўР•
 					StoredProc.StoredProcName="P_AGNACC_UPDATE"
 					StoredProc.ParamByName("nCOMPANY").value		= 42903
 					StoredProc.ParamByName("nRN").value				= account_rn
 					StoredProc.ParamByName("sSTRCODE").value		= STRCODE
-					StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("НомерСчета").text
+					StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text
 					StoredProc.ParamByName("sAGNNAMEACC").value		= agnlist_name
 					StoredProc.ParamByName("sBANKNAMEACC").value	= BANKNAMEACC
 					StoredProc.ParamByName("sBANKFCODEACC").value	= BANKFCODEACC
@@ -727,24 +727,24 @@ sub xml_import
 					StoredProc.ExecProc
 				end if
 			else
-				If nodeNode.selectSingleNode("ЭтоСчетОрганизации").text = "true" or nodeNode.selectSingleNode("Примечание").text ="Нижнекамская ТЭЦ ООО"  then
-					MyFile.Write("INFO "&now()&vbTab&" Cчет с номером "&nodeNode.selectSingleNode("НомерСчета").text&" принадлежит ООО <Нижнекамская ТЭЦ> - пропускаю счет."&vbNewLine)
-				elseIf nodeNode.selectSingleNode("Владелец").text = "" then
-					MyFile.Write("INFO "&now()&vbTab&"У счета с номером "&nodeNode.selectSingleNode("НомерСчета").text&" не указан владелец - пропускаю счет."&vbNewLine)
-				elseIf nodeNode.selectSingleNode("ВидСчета").text = "Депозитный" then
-					MyFile.Write("INFO "&now()&vbTab&" Cчет с номером "&nodeNode.selectSingleNode("НомерСчета").text&" является депозитным - пропускаю счет."&vbNewLine)
+				If nodeNode.selectSingleNode("Р­С‚РѕРЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text = "true" or nodeNode.selectSingleNode("РџСЂРёРјРµС‡Р°РЅРёРµ").text ="РќРёР¶РЅРµРєР°РјСЃРєР°СЏ РўР­Р¦ РћРћРћ"  then
+					MyFile.Write("INFO "&now()&vbTab&" CС‡РµС‚ СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&" РїСЂРёРЅР°РґР»РµР¶РёС‚ РћРћРћ <РќРёР¶РЅРµРєР°РјСЃРєР°СЏ РўР­Р¦> - РїСЂРѕРїСѓСЃРєР°СЋ СЃС‡РµС‚."&vbNewLine)
+				elseIf nodeNode.selectSingleNode("Р’Р»Р°РґРµР»РµС†").text = "" then
+					MyFile.Write("INFO "&now()&vbTab&"РЈ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&" РЅРµ СѓРєР°Р·Р°РЅ РІР»Р°РґРµР»РµС† - РїСЂРѕРїСѓСЃРєР°СЋ СЃС‡РµС‚."&vbNewLine)
+				elseIf nodeNode.selectSingleNode("Р’РёРґРЎС‡РµС‚Р°").text = "Р”РµРїРѕР·РёС‚РЅС‹Р№" then
+					MyFile.Write("INFO "&now()&vbTab&" CС‡РµС‚ СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&" СЏРІР»СЏРµС‚СЃСЏ РґРµРїРѕР·РёС‚РЅС‹Рј - РїСЂРѕРїСѓСЃРєР°СЋ СЃС‡РµС‚."&vbNewLine)
 				else
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В Парус не найден контрагент с кодом SAP "&nodeNode.selectSingleNode("Владелец").text&" которому принадлежит счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - не могу создать/обновить счет."&vbNewLine)
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ РєРѕРЅС‚СЂР°РіРµРЅС‚ СЃ РєРѕРґРѕРј SAP "&nodeNode.selectSingleNode("Р’Р»Р°РґРµР»РµС†").text&" РєРѕС‚РѕСЂРѕРјСѓ РїСЂРёРЅР°РґР»РµР¶РёС‚ СЃС‡РµС‚ СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text&"  - РЅРµ РјРѕРіСѓ СЃРѕР·РґР°С‚СЊ/РѕР±РЅРѕРІРёС‚СЊ СЃС‡РµС‚."&vbNewLine)
 				end if
 			end if
 		next
-		MyFile.Write("INFO "&now()&vbTab&" Банковские счета загружены. Всего обработано: "& object_counter & vbNewLine&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р‘Р°РЅРєРѕРІСЃРєРёРµ СЃС‡РµС‚Р° Р·Р°РіСЂСѓР¶РµРЅС‹. Р’СЃРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРѕ: "& object_counter & vbNewLine&vbNewLine)
 	else
-		MyFile.Write("INFO "&now()&vbTab&" В текущей выгрузке на найдено информации о банковских счетах."&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р’ С‚РµРєСѓС‰РµР№ РІС‹РіСЂСѓР·РєРµ РЅР° РЅР°Р№РґРµРЅРѕ РёРЅС„РѕСЂРјР°С†РёРё Рѕ Р±Р°РЅРєРѕРІСЃРєРёС… СЃС‡РµС‚Р°С…."&vbNewLine)
 	end if
 
-	'НАХОДИМ УЗЕЛ "ДОГОВОРА"'
-	Set Contracts = xmlParser.selectNodes("//ДоговорыКонтрагентов/Строки")
+	'РќРђРҐРћР”РРњ РЈР—Р•Р› "Р”РћР“РћР’РћР Рђ"'
+	Set Contracts = xmlParser.selectNodes("//Р”РѕРіРѕРІРѕСЂС‹РљРѕРЅС‚СЂР°РіРµРЅС‚РѕРІ/РЎС‚СЂРѕРєРё")
 	If Contracts.length > 0 then
 		object_counter = 0
 		For Each nodeNode In Contracts
@@ -774,32 +774,32 @@ sub xml_import
 			
 			object_counter = object_counter+1
 			
-			Query.SQL.Text = "select AGNABBR from agnlist where agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and EMP=1 order by RN DESC"
+			Query.SQL.Text = "select AGNABBR from agnlist where agnname like upper('%"&nodeNode.selectSingleNode("РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№РСЃРїРѕР»РЅРёС‚РµР»СЊ").text&"%') and EMP=1 order by RN DESC"
 			Query.Open
-			If Query.IsEmpty and not InStr(nodeNode.selectSingleNode("ТипДоговора").text, "депозит")=0 then
-				MyFile.Write("INFO "&now()&vbTab&" Договор "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") - депозитный, пропускаю договор."&vbNewLine)
+			If Query.IsEmpty and not InStr(nodeNode.selectSingleNode("РўРёРїР”РѕРіРѕРІРѕСЂР°").text, "РґРµРїРѕР·РёС‚")=0 then
+				MyFile.Write("INFO "&now()&vbTab&" Р”РѕРіРѕРІРѕСЂ "&comment&" ("&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&") - РґРµРїРѕР·РёС‚РЅС‹Р№, РїСЂРѕРїСѓСЃРєР°СЋ РґРѕРіРѕРІРѕСЂ."&vbNewLine)
 			else
-				'НАЙДЕМ ДОГОВОР ПО ССЫЛКЕ 1С
-				Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("Ссылка").text)&"%' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - код свойства "Код 1С"
+				'РќРђР™Р”Р•Рњ Р”РћР“РћР’РћР  РџРћ РЎРЎР«Р›РљР• 1РЎ
+				Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"%' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ 1РЎ"
 				Query.Open 
 				If Query.IsEmpty then
-					'ПОДГОТОВИМ ЗАГЛУШКИ НА СЛУЧАЙ, ЕСЛИ НЕ УДАСТСЯ РАЗОБРАТЬ КОММЕНТАРИЙ
+					'РџРћР”Р“РћРўРћР’РРњ Р—РђР“Р›РЈРЁРљР РќРђ РЎР›РЈР§РђР™, Р•РЎР›Р РќР• РЈР”РђРЎРўРЎРЇ Р РђР—РћР‘Р РђРўР¬ РљРћРњРњР•РќРўРђР РР™
 					doc_type		= "0000"
 					doc_pref		= date&"/"&timer
-					'ПОЛУЧИМ СВОБОДНЫЙ ПОРЯДКОВЫЙ НОМЕР
+					'РџРћР›РЈР§РРњ РЎР’РћР‘РћР”РќР«Р™ РџРћР РЇР”РљРћР’Р«Р™ РќРћРњР•Р 
 					StoredProc.StoredProcName="P_CONTRACTS_GETNEXTNUMB"         
 					StoredProc.ParamByName("NCOMPANY").value=42903
-					StoredProc.ParamByName("SJUR_PERS").value="НК ТЭЦ"
-					StoredProc.ParamByName("DDOC_DATE").value=ConvDate(nodeNode.selectSingleNode("Дата").text)
+					StoredProc.ParamByName("SJUR_PERS").value="РќРљ РўР­Р¦"
+					StoredProc.ParamByName("DDOC_DATE").value=ConvDate(nodeNode.selectSingleNode("Р”Р°С‚Р°").text)
 					StoredProc.ParamByName("SDOC_TYPE").value=doc_type
 					StoredProc.ParamByName("SDOC_PREF").value=doc_pref
 					StoredProc.ExecProc
 					doc_numb		= StoredProc.ParamByName("SDOC_NUMB").value
 
-					'ЕСЛИ КОММЕНТАРИЙ ЗАПОЛНЕН - ПОПРОБУЕМ ВЫТАЩИТЬ ИЗ НЕГО ДАННЫЕ ПО РАНЕЕ ЗАГРУЖЕННОМУ ДОГОВОРУ
-					comment = nodeNode.selectSingleNode("Комментарий").text
+					'Р•РЎР›Р РљРћРњРњР•РќРўРђР РР™ Р—РђРџРћР›РќР•Рќ - РџРћРџР РћР‘РЈР•Рњ Р’Р«РўРђР©РРўР¬ РР— РќР•Р“Рћ Р”РђРќРќР«Р• РџРћ Р РђРќР•Р• Р—РђР“Р РЈР–Р•РќРќРћРњРЈ Р”РћР“РћР’РћР РЈ
+					comment = nodeNode.selectSingleNode("РљРѕРјРјРµРЅС‚Р°СЂРёР№").text
 					If not len(comment)=0 then
-						'РАСПИЛИМ КОММЕНТАРИЙ НА СОСТАВНЫЕ ЧАСТИ: ТИП, ПРЕФИКС И НОМЕР, ПРОВЕРЯЯ КОЛИЧЕСТВО СОСТАВНЫХ ЧАСТЕЙ
+						'Р РђРЎРџРР›РРњ РљРћРњРњР•РќРўРђР РР™ РќРђ РЎРћРЎРўРђР’РќР«Р• Р§РђРЎРўР: РўРРџ, РџР Р•Р¤РРљРЎ Р РќРћРњР•Р , РџР РћР’Р•Р РЇРЇ РљРћР›РР§Р•РЎРўР’Рћ РЎРћРЎРўРђР’РќР«РҐ Р§РђРЎРўР•Р™
 						comment_array			= Split(LTrim(comment), ",")
 						if UBound(comment_array)>0 then
 							contract_complex_number	= RTrim(LTrim(comment_array(1)))
@@ -809,19 +809,19 @@ sub xml_import
 								doc_pref		= contract_number_array(0)
 								doc_numb		= contract_number_array(1)
 																
-								'НАЙДЕМ КОД ТИПА ДОКУМЕНТА
+								'РќРђР™Р”Р•Рњ РљРћР” РўРРџРђ Р”РћРљРЈРњР•РќРўРђ
 								Query.SQL.Text = "select RN from DOCTYPES where DOCCODE='"&doc_type&"'"
 								Query.Open
 								doc_type_RN	= Query.FieldByname("RN").value
 								Query.Close
 								
 								
-								'НАЙДЕМ ДОГОВОР ПО ТИПУ, ПРЕФИКСУ И НОМЕРУ
+								'РќРђР™Р”Р•Рњ Р”РћР“РћР’РћР  РџРћ РўРРџРЈ, РџР Р•Р¤РРљРЎРЈ Р РќРћРњР•Р РЈ
 								Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '%"&doc_numb&"'"
 								Query.Open
-								If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
+								If not Query.IsEmpty and (nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text)=0) then
 									newContract = False
-									old_RN = Query.FieldByname("RN").value		'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
+									old_RN = Query.FieldByname("RN").value		'Р—РђРџРћРњРќРРњ РЈРРќ Р”Р›РЇ РЎРЈР©Р•РЎРўР’РЈР®Р©Р•Р“Рћ Р”РћР“РћР’РћР Рђ
 								else
 									newContract = True
 								end if
@@ -837,15 +837,15 @@ sub xml_import
 					end If				
 				else
 					newContract = False
-					old_RN = Query.FieldByname("UNIT_RN").value		'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
+					old_RN = Query.FieldByname("UNIT_RN").value		'Р—РђРџРћРњРќРРњ РЈРРќ Р”Р›РЇ РЎРЈР©Р•РЎРўР’РЈР®Р©Р•Р“Рћ Р”РћР“РћР’РћР Рђ
 				end if
 				
-				'ЕСЛИ ДОГОВОР НЕ НАЙДЕН ПО КОДУ 1С ИЛИ СТРОКЕ КОММЕНТАРИЯ - СОЗДАДИМ НОВЫЙ
+				'Р•РЎР›Р Р”РћР“РћР’РћР  РќР• РќРђР™Р”Р•Рќ РџРћ РљРћР”РЈ 1РЎ РР›Р РЎРўР РћРљР• РљРћРњРњР•РќРўРђР РРЇ - РЎРћР—Р”РђР”РРњ РќРћР’Р«Р™
 				If newContract then
-					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден договор "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&"), либо не удалось правильно разобрать поле Комментарий - пробую создать новый договор."&vbNewLine)		
+					MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ РґРѕРіРѕРІРѕСЂ "&comment&" ("&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"), Р»РёР±Рѕ РЅРµ СѓРґР°Р»РѕСЃСЊ РїСЂР°РІРёР»СЊРЅРѕ СЂР°Р·РѕР±СЂР°С‚СЊ РїРѕР»Рµ РљРѕРјРјРµРЅС‚Р°СЂРёР№ - РїСЂРѕР±СѓСЋ СЃРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ РґРѕРіРѕРІРѕСЂ."&vbNewLine)		
 					
-					'ПОЛУЧИМ МНЕМОКОД КОНТРАГЕНТА ПО КОДУ SAP
-					Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&RTrim(nodeNode.selectSingleNode("Владелец").text)&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - код свойства "Код SAP" (1ИЗМЕНИТЬ ПОСЛЕ ПЕРЕНОСА В ПРОДУКТИВ)
+					'РџРћР›РЈР§РРњ РњРќР•РњРћРљРћР” РљРћРќРўР РђР“Р•РќРўРђ РџРћ РљРћР”РЈ SAP
+					Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&RTrim(nodeNode.selectSingleNode("Р’Р»Р°РґРµР»РµС†").text)&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP" (1РР—РњР•РќРРўР¬ РџРћРЎР›Р• РџР•Р Р•РќРћРЎРђ Р’ РџР РћР”РЈРљРўРР’)
 					Query.Open
 					Query.SQL.Text = "select AGNABBR, RN, AGNNAME from AGNLIST where RN='" & Query.FieldByname("UNIT_RN").value & "'"
 					Query.Open
@@ -854,11 +854,11 @@ sub xml_import
 					agn_name = Query.FieldByname("AGNNAME").value
 					Query.Close
 					
-					'ПОЛУЧИМ НОМЕР СТРОКИ БАНКОВСКОГО СЧЕТА ОРГАНИЗАЦИИ ЧЕРЕЗ НОМЕР ЭТОГО СЧЕТА
-					If not nodeNode.selectSingleNode("СчетОрганизации").text = "" then
-						orgaccbik		= Trim(nodeNode.selectSingleNode("СчетОрганизацииБИК").text)
-						orgacc			= Trim(nodeNode.selectSingleNode("СчетОрганизации").text)
-						Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & orgaccbik & "'"
+					'РџРћР›РЈР§РРњ РќРћРњР•Р  РЎРўР РћРљР Р‘РђРќРљРћР’РЎРљРћР“Рћ РЎР§Р•РўРђ РћР Р“РђРќРР—РђР¦РР Р§Р•Р Р•Р— РќРћРњР•Р  Р­РўРћР“Рћ РЎР§Р•РўРђ
+					If not nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text = "" then
+						orgaccbik		= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРёР‘РРљ").text)
+						orgacc			= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text)
+						Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & orgaccbik & "'"
 						Query.Open
 						If not Query.IsEmpty then
 							Query.SQL.Text	= "select STRCODE from AGNACC where AGNACC='"& orgacc &"' and AGNBANKS='" & Query.FieldByname("NRN").value & "' and AGNRN='5805775'"
@@ -866,70 +866,70 @@ sub xml_import
 							jur_strcode		= Query.FieldByname("STRCODE").value
 							Query.Close
 						else
-							MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Для банковского счета с номером "&nodeNode.selectSingleNode("СчетОрганизации").text&" в Парус не найден БИК "&nodeNode.selectSingleNode("СчетОрганизацииБИК").text&" - делаю останов для отладки."&vbNewLine)
+							MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р”Р»СЏ Р±Р°РЅРєРѕРІСЃРєРѕРіРѕ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text&" РІ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р‘РРљ "&nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРёР‘РРљ").text&" - РґРµР»Р°СЋ РѕСЃС‚Р°РЅРѕРІ РґР»СЏ РѕС‚Р»Р°РґРєРё."&vbNewLine)
 						end if
 					else
 						jur_strcode		= NULL
 					end if
 					
-					'ПОЛУЧИМ НОМЕР СТРОКИ БАНКОВСКОГО СЧЕТА КОНТРАГЕНТА ЧЕРЕЗ НОМЕР ЭТОГО СЧЕТА
-					if not nodeNode.selectSingleNode("СчетКонтрагента").text="" then
-						agnaccbik		= Trim(nodeNode.selectSingleNode("СчетКонтрагентаБИК").text)
-						agnacc			= Trim(nodeNode.selectSingleNode("СчетКонтрагента").text)
-						Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & agnaccbik & "'"
+					'РџРћР›РЈР§РРњ РќРћРњР•Р  РЎРўР РћРљР Р‘РђРќРљРћР’РЎРљРћР“Рћ РЎР§Р•РўРђ РљРћРќРўР РђР“Р•РќРўРђ Р§Р•Р Р•Р— РќРћРњР•Р  Р­РўРћР“Рћ РЎР§Р•РўРђ
+					if not nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text="" then
+						agnaccbik		= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text)
+						agnacc			= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text)
+						Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & agnaccbik & "'"
 						Query.Open
 						If not Query.IsEmpty then
 							Query.SQL.Text = "select STRCODE from AGNACC where AGNACC='"&agnacc&"' and AGNBANKS='" & Query.FieldByname("NRN").value & "' and AGNRN='"&agn_rn&"'"
 							Query.Open
 							If not Query.IsEmpty then
 								agn_strcode = Query.FieldByname("STRCODE").value
-								note = nodeNode.selectSingleNode("ПредметДоговора").text
+								note = nodeNode.selectSingleNode("РџСЂРµРґРјРµС‚Р”РѕРіРѕРІРѕСЂР°").text
 							else
-								MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Банковский счет с номером "&nodeNode.selectSingleNode("СчетКонтрагента").text&" не принадлежит контрагенту "&agn_abbr&"  - в договоре <<"&comment&">> будет указан случайный счет контрагента"&vbNewLine)
+								MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р‘Р°РЅРєРѕРІСЃРєРёР№ СЃС‡РµС‚ СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text&" РЅРµ РїСЂРёРЅР°РґР»РµР¶РёС‚ РєРѕРЅС‚СЂР°РіРµРЅС‚Сѓ "&agn_abbr&"  - РІ РґРѕРіРѕРІРѕСЂРµ <<"&comment&">> Р±СѓРґРµС‚ СѓРєР°Р·Р°РЅ СЃР»СѓС‡Р°Р№РЅС‹Р№ СЃС‡РµС‚ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°"&vbNewLine)
 								Query.SQL.Text = "select STRCODE from AGNACC where AGNRN='"&agn_rn&"'"
 								Query.Open
 								agn_strcode = Query.FieldByname("STRCODE").value
-								note = "В ДОГОВОРЕ УКАЗАН СЛУЧАЙНЫЙ БАНКОВСКИЙ СЧЕТ КОНТРАГЕНТА - ВЫБЕРИТЕ ПРАВИЛЬНЫЙ СЧЕТ!!!"
+								note = "Р’ Р”РћР“РћР’РћР Р• РЈРљРђР—РђРќ РЎР›РЈР§РђР™РќР«Р™ Р‘РђРќРљРћР’РЎРљРР™ РЎР§Р•Рў РљРћРќРўР РђР“Р•РќРўРђ - Р’Р«Р‘Р•Р РРўР• РџР РђР’РР›Р¬РќР«Р™ РЎР§Р•Рў!!!"
 							end if
 							Query.Close
 						else
-							MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Для банковского счета с номером "&nodeNode.selectSingleNode("СчетКонтрагента").text&" в Парус не найден БИК "&nodeNode.selectSingleNode("СчетКонтрагентаБИК").text&" - делаю останов для отладки."&vbNewLine)
+							MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р”Р»СЏ Р±Р°РЅРєРѕРІСЃРєРѕРіРѕ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text&" РІ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р‘РРљ "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text&" - РґРµР»Р°СЋ РѕСЃС‚Р°РЅРѕРІ РґР»СЏ РѕС‚Р»Р°РґРєРё."&vbNewLine)
 						end if					
 					else
-						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В Парус не найден банковский счет контрагента "&agn_abbr&" - в договоре <<"&comment&">> будет указан случайный счет контрагента"&vbNewLine)
+						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р±Р°РЅРєРѕРІСЃРєРёР№ СЃС‡РµС‚ РєРѕРЅС‚СЂР°РіРµРЅС‚Р° "&agn_abbr&" - РІ РґРѕРіРѕРІРѕСЂРµ <<"&comment&">> Р±СѓРґРµС‚ СѓРєР°Р·Р°РЅ СЃР»СѓС‡Р°Р№РЅС‹Р№ СЃС‡РµС‚ РєРѕРЅС‚СЂР°РіРµРЅС‚Р°"&vbNewLine)
 						Query.SQL.Text = "select STRCODE from AGNACC where AGNRN='"&agn_rn&"'"
 						Query.Open
 						if not Query.IsEmpty then
 							agn_strcode = Query.FieldByname("STRCODE").value
 						else
-							'СОЗДАЕМ ЗАПИСЬ О НОВОМ БАНКОВСКОМ СЧЕТЕ
+							'РЎРћР—Р”РђР•Рњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ Р‘РђРќРљРћР’РЎРљРћРњ РЎР§Р•РўР•
 							StoredProc.StoredProcName="P_AGNACC_INSERT"
 							StoredProc.ParamByName("nCOMPANY").value		= 42903 
 							StoredProc.ParamByName("nPRN").value			= agn_rn
 							StoredProc.ParamByName("sSTRCODE").value		= "0001"
-							StoredProc.ParamByName("SAGNACC").value			= NULL 'nodeNode.selectSingleNode("НомерСчета").text
+							StoredProc.ParamByName("SAGNACC").value			= NULL 'nodeNode.selectSingleNode("РќРѕРјРµСЂРЎС‡РµС‚Р°").text
 							StoredProc.ParamByName("sAGNNAMEACC").value		= agn_name
 							StoredProc.ParamByName("SAGNBANKS").value		= NULL
 							StoredProc.ParamByName("NACCESS_FLAG").value	= 1
 							StoredProc.ExecProc
 							agn_strcode = "0001"
 						end if
-						note = "В ДОГОВОРЕ УКАЗАН СЛУЧАЙНЫЙ БАНКОВСКИЙ СЧЕТ КОНТРАГЕНТА - ВЫБЕРИТЕ ПРАВИЛЬНЫЙ СЧЕТ!!!"
+						note = "Р’ Р”РћР“РћР’РћР Р• РЈРљРђР—РђРќ РЎР›РЈР§РђР™РќР«Р™ Р‘РђРќРљРћР’РЎРљРР™ РЎР§Р•Рў РљРћРќРўР РђР“Р•РќРўРђ - Р’Р«Р‘Р•Р РРўР• РџР РђР’РР›Р¬РќР«Р™ РЎР§Р•Рў!!!"
 					end if
 					
-					'ЗАПОЛНИМ НЕКОТОРЫЕ ФЛАГИ
-					if len(nodeNode.selectSingleNode("ВнешРегНомер").text)>0 then
+					'Р—РђРџРћР›РќРРњ РќР•РљРћРўРћР Р«Р• Р¤Р›РђР“Р
+					if len(nodeNode.selectSingleNode("Р’РЅРµС€Р РµРіРќРѕРјРµСЂ").text)>0 then
 						INOUT_SIGN = 0
 					else
 						INOUT_SIGN = 1
 					end if				
 									
-					'ПОЛУЧИМ КОД ПОДРАЗДЕЛЕНИЯ ПО ЦЕПОЧКЕ: "ФИО ИСПОЛНИТЕЛЯ -> УИН КОНТРАГЕНТА -> УИН СОТРУДНИКА -> ЗАПИСЬ О ТЕКУЩЕЙ ДОЛЖНОСТИ -> УИН ПОДРАЗДЕЛЕНИЯ -> КОД ПОДРАЗДЕЛЕНИЯ"
-					if nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Гатина Гузель Илдаровна" then
-						executive = "0001 ГАТИНА Г.И."		'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СТРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
-						subdiv = "НкТЭЦ.13.15"
+					'РџРћР›РЈР§РРњ РљРћР” РџРћР”Р РђР—Р”Р•Р›Р•РќРРЇ РџРћ Р¦Р•РџРћР§РљР•: "Р¤РРћ РРЎРџРћР›РќРРўР•Р›РЇ -> РЈРРќ РљРћРќРўР РђР“Р•РќРўРђ -> РЈРРќ РЎРћРўР РЈР”РќРРљРђ -> Р—РђРџРРЎР¬ Рћ РўР•РљРЈР©Р•Р™ Р”РћР›Р–РќРћРЎРўР -> РЈРРќ РџРћР”Р РђР—Р”Р•Р›Р•РќРРЇ -> РљРћР” РџРћР”Р РђР—Р”Р•Р›Р•РќРРЇ"
+					if nodeNode.selectSingleNode("РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№РСЃРїРѕР»РЅРёС‚РµР»СЊ").text="Р“Р°С‚РёРЅР° Р“СѓР·РµР»СЊ РР»РґР°СЂРѕРІРЅР°" then
+						executive = "0001 Р“РђРўРРќРђ Р“.Р."		'Р“РђРўРРќРђ Р“.Р. - РџР РћР¤РљРћРњ, Р•Р• РќР•Рў РЎРўР Р•Р”Р РЎРћРўР РЈР”РќРРљРћР’ РўР­Р¦ - РќРђР—РќРђР§Р•Рњ РџРћР”Р РђР—Р”Р•Р›Р•РќРР• "РћРўР”Р•Р› РљРђР”Р РћР’"
+						subdiv = "РќРєРўР­Р¦.13.15"
 					else
-						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 order by RN DESC"	'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
+						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№РСЃРїРѕР»РЅРёС‚РµР»СЊ").text&"%') and not b.crn=2503442 and EMP=1 order by RN DESC"	'РћРўРЎР•РРњ РќР• РЎРћРўР РЈР”РќРРљРћР’ Р РЎРћРўР РЈР”РќРРљРћР’ РР— РџРђРџРљР РЈР’РћР›Р•РќРќР«Р•
 						Query.Open
 						executive		= Query.FieldByname("AGNABBR").value				
 						Query.SQL.Text = "select RN from CLNPERSONS where PERS_AGENT='"&Query.FieldByname("RN").value&"'"
@@ -942,32 +942,32 @@ sub xml_import
 						Query.Close
 					end if
 					
-					'ПОЛУЧИМ НАИМЕНОВАНИЕ ВАЛЮТЫ ПО ЕЕ КОДУ
-					Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("ВалютаВзаиморасчетов").text&"'"
+					'РџРћР›РЈР§РРњ РќРђРРњР•РќРћР’РђРќРР• Р’РђР›Р®РўР« РџРћ Р•Р• РљРћР”РЈ
+					Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р’Р·Р°РёРјРѕСЂР°СЃС‡РµС‚РѕРІ").text&"'"
 					Query.Open
 					If Query.IsEmpty then
-						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Валюта с кодом "&nodeNode.selectSingleNode("ВалютаВзаиморасчетов").text&" из договора <<"&comment&">> не найдена. Используется значение по-умолчанию - RUR"&vbNewLine)
+						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’Р°Р»СЋС‚Р° СЃ РєРѕРґРѕРј "&nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р’Р·Р°РёРјРѕСЂР°СЃС‡РµС‚РѕРІ").text&" РёР· РґРѕРіРѕРІРѕСЂР° <<"&comment&">> РЅРµ РЅР°Р№РґРµРЅР°. РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ Р·РЅР°С‡РµРЅРёРµ РїРѕ-СѓРјРѕР»С‡Р°РЅРёСЋ - RUR"&vbNewLine)
 						scurrency = "RUR"
 					else
-						scurrency = nodeNode.selectSingleNode("ВалютаВзаиморасчетов").text
+						scurrency = nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р’Р·Р°РёРјРѕСЂР°СЃС‡РµС‚РѕРІ").text
 					end if
 					Query.Close
 					
-					If nodeNode.selectSingleNode("СрокДействияПо").text="0001-01-01" then
+					If nodeNode.selectSingleNode("РЎСЂРѕРєР”РµР№СЃС‚РІРёСЏРџРѕ").text="0001-01-01" then
 						endDate = "01.01.0001"	'NULL
 					Else
-						endDate = ConvDate(nodeNode.selectSingleNode("СрокДействияПо").text)
+						endDate = ConvDate(nodeNode.selectSingleNode("РЎСЂРѕРєР”РµР№СЃС‚РІРёСЏРџРѕ").text)
 					end if
 					
 					If agn_abbr="" then
-						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В Парус не найден контрагент с кодом "&nodeNode.selectSingleNode("Владелец").text&" из договора "&comment&" - пропускаю договор."&vbNewLine)
+						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ РєРѕРЅС‚СЂР°РіРµРЅС‚ СЃ РєРѕРґРѕРј "&nodeNode.selectSingleNode("Р’Р»Р°РґРµР»РµС†").text&" РёР· РґРѕРіРѕРІРѕСЂР° "&comment&" - РїСЂРѕРїСѓСЃРєР°СЋ РґРѕРіРѕРІРѕСЂ."&vbNewLine)
 					else
 					
-						'ПОЛУЧИМ ТИП СУММЫ И ЛСЧЕТА ДЛЯ ЭТАПА
-						If nodeNode.selectSingleNode("ВидДоговора").text = "С поставщиком" then
+						'РџРћР›РЈР§РРњ РўРРџ РЎРЈРњРњР« Р Р›РЎР§Р•РўРђ Р”Р›РЇ Р­РўРђРџРђ
+						If nodeNode.selectSingleNode("Р’РёРґР”РѕРіРѕРІРѕСЂР°").text = "РЎ РїРѕСЃС‚Р°РІС‰РёРєРѕРј" then
 							sumType = 1
 							acc_kind = 0
-						elseif nodeNode.selectSingleNode("ВидДоговора").text = "С покупателем" then
+						elseif nodeNode.selectSingleNode("Р’РёРґР”РѕРіРѕРІРѕСЂР°").text = "РЎ РїРѕРєСѓРїР°С‚РµР»РµРј" then
 							sumType = 2
 							acc_kind = 1
 						else
@@ -975,70 +975,70 @@ sub xml_import
 							acc_kind = 0
 						end if
 						
-						'ОПРЕДЕЛИМ - ДОПСОГЛАШЕНИЕ ИЛИ НОВЫЙ ДОГОВОР
-						if nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0 then
-							'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОГОВОРЕ
+						'РћРџР Р•Р”Р•Р›РРњ - Р”РћРџРЎРћР“Р›РђРЁР•РќРР• РР›Р РќРћР’Р«Р™ Р”РћР“РћР’РћР 
+						if nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text)=0 then
+							'РЎРћР—Р”РђР•Рњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ Р”РћР“РћР’РћР Р•
 							StoredProc.StoredProcName="P_CONTRACTS_INSERT"
 							StoredProc.ParamByName("nCOMPANY").value		= 42903
-							StoredProc.ParamByName("nCRN").value			= 104583519                                        'код каталога
-							StoredProc.ParamByName("nPRN").value			= PRN                                        'код основного договора
-							StoredProc.ParamByName("SJUR_PERS").value		= "НК ТЭЦ"
+							StoredProc.ParamByName("nCRN").value			= 104583519                                        'РєРѕРґ РєР°С‚Р°Р»РѕРіР°
+							StoredProc.ParamByName("nPRN").value			= PRN                                        'РєРѕРґ РѕСЃРЅРѕРІРЅРѕРіРѕ РґРѕРіРѕРІРѕСЂР°
+							StoredProc.ParamByName("SJUR_PERS").value		= "РќРљ РўР­Р¦"
 							StoredProc.ParamByName("SJUR_ACC").value		= jur_strcode
 							StoredProc.ParamByName("SDOC_TYPE").value		= doc_type
 							StoredProc.ParamByName("SDOC_PREF").value		= doc_pref
 							StoredProc.ParamByName("SDOC_NUMB").value		= doc_numb
-							StoredProc.ParamByName("DDOC_DATE").value		= ConvDate(nodeNode.selectSingleNode("Дата").text)
-							StoredProc.ParamByName("SEXT_NUMBER").value		= nodeNode.selectSingleNode("ВнешРегНомер").text
-							StoredProc.ParamByName("NINOUT_SIGN").value		= INOUT_SIGN	'булево Входящий, Истина=0, Ложь=1
-							StoredProc.ParamByName("NFALSE_DOC").value		= 0				'булево Условный, Ложь=0, Истина=1
-							StoredProc.ParamByName("NEXT_AGREEMENT").value	= ext_agreement	'булево Допсоглашение, Ложь=0, Истина=1
+							StoredProc.ParamByName("DDOC_DATE").value		= ConvDate(nodeNode.selectSingleNode("Р”Р°С‚Р°").text)
+							StoredProc.ParamByName("SEXT_NUMBER").value		= nodeNode.selectSingleNode("Р’РЅРµС€Р РµРіРќРѕРјРµСЂ").text
+							StoredProc.ParamByName("NINOUT_SIGN").value		= INOUT_SIGN	'Р±СѓР»РµРІРѕ Р’С…РѕРґСЏС‰РёР№, РСЃС‚РёРЅР°=0, Р›РѕР¶СЊ=1
+							StoredProc.ParamByName("NFALSE_DOC").value		= 0				'Р±СѓР»РµРІРѕ РЈСЃР»РѕРІРЅС‹Р№, Р›РѕР¶СЊ=0, РСЃС‚РёРЅР°=1
+							StoredProc.ParamByName("NEXT_AGREEMENT").value	= ext_agreement	'Р±СѓР»РµРІРѕ Р”РѕРїСЃРѕРіР»Р°С€РµРЅРёРµ, Р›РѕР¶СЊ=0, РСЃС‚РёРЅР°=1
 							StoredProc.ParamByName("SAGENT").value			= agn_abbr
 							StoredProc.ParamByName("SAGNACC").value			= agn_strcode
 							StoredProc.ParamByName("SEXECUTIVE").value		= executive
 							StoredProc.ParamByName("SSUBDIVISION").value	= subdiv
-							StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)
+							StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("РЎСЂРѕРєР”РµР№СЃС‚РІРёСЏРЎ").text)
 							StoredProc.ParamByName("DEND_DATE").value		= endDate
 							StoredProc.ParamByName("NSUM_TYPE").value		= 1
 							StoredProc.ParamByName("NDOC_SUM").value		= 0
-							StoredProc.ParamByName("NDOC_SUMTAX").value		= Replace(nodeNode.selectSingleNode("СуммаДоговора").text, ".", ",")
+							StoredProc.ParamByName("NDOC_SUMTAX").value		= Replace(nodeNode.selectSingleNode("РЎСѓРјРјР°Р”РѕРіРѕРІРѕСЂР°").text, ".", ",")
 							StoredProc.ParamByName("NDOC_SUM_NDS").value	= 0
 							StoredProc.ParamByName("NAUTOCALC_SIGN").value	= 1
 							StoredProc.ParamByName("SCURRENCY").value		= scurrency
 							StoredProc.ParamByName("NCURCOURS").value		= 1
 							StoredProc.ParamByName("NCURBASE").value		= 1
-							StoredProc.ParamByName("SSUBJECT").value		= nodeNode.selectSingleNode("ПредметДоговора").text
+							StoredProc.ParamByName("SSUBJECT").value		= nodeNode.selectSingleNode("РџСЂРµРґРјРµС‚Р”РѕРіРѕРІРѕСЂР°").text
 							StoredProc.ParamByName("SNOTE").value			= note
 							StoredProc.ExecProc
 							newRN = StoredProc.ParamByName("nRN").value
 							
-							'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
-							StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДогКод1С
-							StoredProc.ParamByName("PROPERTY").value="ДогКод1С"
+							'Р—РђРџРРЁР•Рњ Р”РђРќРќР«Р• Р’ РЎР’РћР™РЎРўР’Рђ Р”РћРљРЈРњР•РќРўРђ
+							StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Р”РѕРіРљРѕРґ1РЎ
+							StoredProc.ParamByName("PROPERTY").value="Р”РѕРіРљРѕРґ1РЎ"
 							StoredProc.ParamByName("UNITCODE").value="Contracts"
 							StoredProc.ParamByName("RN_SOTR").value=newRN
-							StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+							StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)
 							StoredProc.ParamByName("NUM_VAL").value=NULL
 							StoredProc.ExecProc
 							
-							'ДОБАВИМ ПЕРВЫЙ ЭТАП К ДОГОВОРУ
+							'Р”РћР‘РђР’РРњ РџР•Р Р’Р«Р™ Р­РўРђРџ Рљ Р”РћР“РћР’РћР РЈ
 							StoredProc.StoredProcName="P_STAGES_INSERT"        
 							StoredProc.ParamByName("nCOMPANY").value		= 42903
 							StoredProc.ParamByName("nPRN").value			= newRN
 							StoredProc.ParamByName("SNUMB").value			= "1"
 							StoredProc.ParamByName("NEXT_AGREEMENT").value	= 0
 							StoredProc.ParamByName("NSIGN_SUM").value		= 1
-							StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)
+							StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("РЎСЂРѕРєР”РµР№СЃС‚РІРёСЏРЎ").text)
 							StoredProc.ParamByName("DEND_DATE").value		= endDate
 							StoredProc.ParamByName("SJUR_ACC").value		= jur_strcode
-							StoredProc.ParamByName("NSUM_TYPE").value		= sumType				'расчет суммы
+							StoredProc.ParamByName("NSUM_TYPE").value		= sumType				'СЂР°СЃС‡РµС‚ СЃСѓРјРјС‹
 							StoredProc.ParamByName("NSTAGE_SUM").value		= 0
-							StoredProc.ParamByName("NSTAGE_SUMTAX").value	= Replace(nodeNode.selectSingleNode("СуммаДоговора").text, ".", ",")
+							StoredProc.ParamByName("NSTAGE_SUMTAX").value	= Replace(nodeNode.selectSingleNode("РЎСѓРјРјР°Р”РѕРіРѕРІРѕСЂР°").text, ".", ",")
 							StoredProc.ParamByName("NSTAGE_SUM_NDS").value	= 0
 							StoredProc.ParamByName("NAUTOCALC_SIGN").value	= 1
-							StoredProc.ParamByName("SDESCRIPTION").value	= nodeNode.selectSingleNode("ПредметДоговора").text
-							StoredProc.ParamByName("SCOMMENTS").value		= nodeNode.selectSingleNode("ПредметДоговора").text
+							StoredProc.ParamByName("SDESCRIPTION").value	= nodeNode.selectSingleNode("РџСЂРµРґРјРµС‚Р”РѕРіРѕРІРѕСЂР°").text
+							StoredProc.ParamByName("SCOMMENTS").value		= nodeNode.selectSingleNode("РџСЂРµРґРјРµС‚Р”РѕРіРѕРІРѕСЂР°").text
 							StoredProc.ParamByName("NFACEACC_EXIST").value	= 0
-							StoredProc.ParamByName("SFACEACCCRN").value		= "test" 'GetFaceAccCat(subdiv)'связать по подразделению
+							StoredProc.ParamByName("SFACEACCCRN").value		= "test" 'GetFaceAccCat(subdiv)'СЃРІСЏР·Р°С‚СЊ РїРѕ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЋ
 							StoredProc.ParamByName("SAGENT").value			= agn_abbr
 							StoredProc.ParamByName("SFACEACC").value		= doc_pref&"/"&doc_numb&"/1"
 							StoredProc.ParamByName("NACC_KIND").value		= acc_kind
@@ -1053,11 +1053,11 @@ sub xml_import
 							StoredProc.ParamByName("NSAME_NOMN").value		= 0					
 							StoredProc.ExecProc
 							
-							Set ExtraData = nodeNode.selectNodes("ДопРеквизиты/Строки")
+							Set ExtraData = nodeNode.selectNodes("Р”РѕРїР РµРєРІРёР·РёС‚С‹/РЎС‚СЂРѕРєРё")
 							If ExtraData.length > 0 then
 								For Each node In ExtraData
-									AttribName = node.selectSingleNode("Имя").text
-									If AttribName = "Способ закупки" or AttribName = "Количество поданных заявок" or AttribName = "Количество недопущенных заявок" or AttribName = "Начальная цена закупки" or AttribName = "№ закупочной процедуры" then
+									AttribName = node.selectSingleNode("РРјСЏ").text
+									If AttribName = "РЎРїРѕСЃРѕР± Р·Р°РєСѓРїРєРё" or AttribName = "РљРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРґР°РЅРЅС‹С… Р·Р°СЏРІРѕРє" or AttribName = "РљРѕР»РёС‡РµСЃС‚РІРѕ РЅРµРґРѕРїСѓС‰РµРЅРЅС‹С… Р·Р°СЏРІРѕРє" or AttribName = "РќР°С‡Р°Р»СЊРЅР°СЏ С†РµРЅР° Р·Р°РєСѓРїРєРё" or AttribName = "в„– Р·Р°РєСѓРїРѕС‡РЅРѕР№ РїСЂРѕС†РµРґСѓСЂС‹" then
 										Query.SQL.text = "select CODE from docs_props where name = '"&AttribName&"'"
 										Query.Open	
 										
@@ -1065,17 +1065,17 @@ sub xml_import
 										StoredProc.ParamByName("PROPERTY").value=Query.FieldByname("CODE").value
 										StoredProc.ParamByName("UNITCODE").value="Contracts"
 										StoredProc.ParamByName("RN_SOTR").value=newRN
-										StoredProc.ParamByName("ST_VAL").value=node.selectSingleNode("Значение").text
+										StoredProc.ParamByName("ST_VAL").value=node.selectSingleNode("Р—РЅР°С‡РµРЅРёРµ").text
 										StoredProc.ParamByName("NUM_VAL").value=NULL
 										StoredProc.ExecProc
-									elseif AttribName = "Принадлежность к субъектам мал/ср. бизнеса" then
-										If node.selectSingleNode("Значение").text="да" then
+									elseif AttribName = "РџСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚СЊ Рє СЃСѓР±СЉРµРєС‚Р°Рј РјР°Р»/СЃСЂ. Р±РёР·РЅРµСЃР°" then
+										If node.selectSingleNode("Р—РЅР°С‡РµРЅРёРµ").text="РґР°" then
 											val = 1
 										else
 											val = 0
 										end if
 										StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"        
-										StoredProc.ParamByName("PROPERTY").value="Субъект мал/ср бизн."
+										StoredProc.ParamByName("PROPERTY").value="РЎСѓР±СЉРµРєС‚ РјР°Р»/СЃСЂ Р±РёР·РЅ."
 										StoredProc.ParamByName("UNITCODE").value="Contracts"
 										StoredProc.ParamByName("RN_SOTR").value=newRN
 										StoredProc.ParamByName("ST_VAL").value=NULL
@@ -1085,49 +1085,49 @@ sub xml_import
 								next
 							end if
 						else
-							Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("БазовыйДоговор").text&"' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - код свойства "Код 1С"
+							Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text&"' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ 1РЎ"
 							Query.Open
 							UNIT_RN = Query.FieldByname("UNIT_RN").value
 							If Query.IsEmpty then
-								MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В Парус не найден родительский договор с кодом 1С "&nodeNode.selectSingleNode("БазовыйДоговор").text&" - не могу завести новый этап"&vbNewLine)
+								MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ РґРѕРіРѕРІРѕСЂ СЃ РєРѕРґРѕРј 1РЎ "&nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text&" - РЅРµ РјРѕРіСѓ Р·Р°РІРµСЃС‚Рё РЅРѕРІС‹Р№ СЌС‚Р°Рї"&vbNewLine)
 							else	
-								Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("Ссылка").text&"' and docs_prop_rn='109199304' and unitcode='ContractsStages'"        ' 109199304 - код свойства "Код 1С"
+								Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text&"' and docs_prop_rn='109199304' and unitcode='ContractsStages'"        ' 109199304 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ 1РЎ"
 								Query.Open
 								If Query.IsEmpty then
-									MyFile.Write(vbTab&"INFO "&now()&vbTab&" В Парус найден родительский договор с кодом 1С "&nodeNode.selectSingleNode("БазовыйДоговор").text&" - завожу новый этап"&vbNewLine)
+									MyFile.Write(vbTab&"INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ РґРѕРіРѕРІРѕСЂ СЃ РєРѕРґРѕРј 1РЎ "&nodeNode.selectSingleNode("Р‘Р°Р·РѕРІС‹Р№Р”РѕРіРѕРІРѕСЂ").text&" - Р·Р°РІРѕР¶Сѓ РЅРѕРІС‹Р№ СЌС‚Р°Рї"&vbNewLine)
 									
-									'ПОЛУЧИМ ПРЕФИКС НУМЕРАЦИИ ЭТАПА
+									'РџРћР›РЈР§РРњ РџР Р•Р¤РРљРЎ РќРЈРњР•Р РђР¦РР Р­РўРђРџРђ
 									Query.SQL.Text="select DOC_PREF, DOC_NUMB from CONTRACTS where RN='"&UNIT_RN&"'"
 									Query.Open
 									doc_pref = Trim(Query.FieldByname("DOC_PREF").value)
 									doc_numb = Trim(Query.FieldByname("DOC_NUMB").value)
 																	
-									'ПОЛУЧИМ ПОРЯДКОВЫЙ НОМЕР
+									'РџРћР›РЈР§РРњ РџРћР РЇР”РљРћР’Р«Р™ РќРћРњР•Р 
 									StoredProc.StoredProcName="P_STAGES_GETNEXTNUMB"
 									StoredProc.ParamByName("NCOMPANY").value		= 42903
 									StoredProc.ParamByName("NPRN").value			= UNIT_RN
 									StoredProc.ExecProc
 									snumb = StoredProc.ParamByName("SNUMB_MAX").value
 									
-									'ДОБАВИМ НОВЫЙ ЭТАП К ДОГОВОРУ
+									'Р”РћР‘РђР’РРњ РќРћР’Р«Р™ Р­РўРђРџ Рљ Р”РћР“РћР’РћР РЈ
 									StoredProc.StoredProcName="P_STAGES_INSERT"        
 									StoredProc.ParamByName("nCOMPANY").value		= 42903
 									StoredProc.ParamByName("nPRN").value			= UNIT_RN
 									StoredProc.ParamByName("SNUMB").value			= snumb
 									StoredProc.ParamByName("NEXT_AGREEMENT").value	= 1
 									StoredProc.ParamByName("NSIGN_SUM").value		= 1
-									StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)
+									StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("РЎСЂРѕРєР”РµР№СЃС‚РІРёСЏРЎ").text)
 									StoredProc.ParamByName("DEND_DATE").value		= endDate
 									StoredProc.ParamByName("SJUR_ACC").value		= jur_strcode
-									StoredProc.ParamByName("NSUM_TYPE").value		= sumType				'расчет суммы
+									StoredProc.ParamByName("NSUM_TYPE").value		= sumType				'СЂР°СЃС‡РµС‚ СЃСѓРјРјС‹
 									StoredProc.ParamByName("NSTAGE_SUM").value		= 0
-									StoredProc.ParamByName("NSTAGE_SUMTAX").value	= Replace(nodeNode.selectSingleNode("СуммаДоговора").text, ".", ",")
+									StoredProc.ParamByName("NSTAGE_SUMTAX").value	= Replace(nodeNode.selectSingleNode("РЎСѓРјРјР°Р”РѕРіРѕРІРѕСЂР°").text, ".", ",")
 									StoredProc.ParamByName("NSTAGE_SUM_NDS").value	= 0
 									StoredProc.ParamByName("NAUTOCALC_SIGN").value	= 1
-									StoredProc.ParamByName("SDESCRIPTION").value	= nodeNode.selectSingleNode("ПредметДоговора").text
-									StoredProc.ParamByName("SCOMMENTS").value		= nodeNode.selectSingleNode("ПредметДоговора").text
+									StoredProc.ParamByName("SDESCRIPTION").value	= nodeNode.selectSingleNode("РџСЂРµРґРјРµС‚Р”РѕРіРѕРІРѕСЂР°").text
+									StoredProc.ParamByName("SCOMMENTS").value		= nodeNode.selectSingleNode("РџСЂРµРґРјРµС‚Р”РѕРіРѕРІРѕСЂР°").text
 									StoredProc.ParamByName("NFACEACC_EXIST").value	= 0
-									StoredProc.ParamByName("SFACEACCCRN").value		= "test" 'GetFaceAccCat(subdiv)'связать по подразделению
+									StoredProc.ParamByName("SFACEACCCRN").value		= "test" 'GetFaceAccCat(subdiv)'СЃРІСЏР·Р°С‚СЊ РїРѕ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЋ
 									StoredProc.ParamByName("SAGENT").value			= agn_abbr
 									StoredProc.ParamByName("SFACEACC").value		= doc_pref&"/"&doc_numb&"/"&snumb
 									StoredProc.ParamByName("NACC_KIND").value		= 0
@@ -1143,40 +1143,40 @@ sub xml_import
 									StoredProc.ExecProc
 									newRN = StoredProc.ParamByName("nRN").value
 									
-									'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
-									StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДогКод1С
-									StoredProc.ParamByName("PROPERTY").value="ДогЭтапКод1С"
+									'Р—РђРџРРЁР•Рњ Р”РђРќРќР«Р• Р’ РЎР’РћР™РЎРўР’Рђ Р”РћРљРЈРњР•РќРўРђ
+									StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Р”РѕРіРљРѕРґ1РЎ
+									StoredProc.ParamByName("PROPERTY").value="Р”РѕРіР­С‚Р°РїРљРѕРґ1РЎ"
 									StoredProc.ParamByName("UNITCODE").value="ContractsStages"
 									StoredProc.ParamByName("RN_SOTR").value=newRN
-									StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+									StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)
 									StoredProc.ParamByName("NUM_VAL").value=NULL
 									StoredProc.ExecProc
 								else
-									MyFile.Write("INFO "&now()&vbTab&" В Парус найден этап "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") - пропускаю этап."&vbNewLine)
+									MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ СЌС‚Р°Рї "&comment&" ("&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&") - РїСЂРѕРїСѓСЃРєР°СЋ СЌС‚Р°Рї."&vbNewLine)
 								end if
 							end if
 						end if
 					end if
 				else
-					MyFile.Write("INFO "&now()&vbTab&" В Парус найден договор "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") - пропускаю договор."&vbNewLine)
-					'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
-					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДогКод1С
-					StoredProc.ParamByName("PROPERTY").value="ДогКод1С"
+					MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ РґРѕРіРѕРІРѕСЂ "&comment&" ("&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&") - РїСЂРѕРїСѓСЃРєР°СЋ РґРѕРіРѕРІРѕСЂ."&vbNewLine)
+					'Р—РђРџРРЁР•Рњ Р”РђРќРќР«Р• Р’ РЎР’РћР™РЎРўР’Рђ Р”РћРљРЈРњР•РќРўРђ
+					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Р”РѕРіРљРѕРґ1РЎ
+					StoredProc.ParamByName("PROPERTY").value="Р”РѕРіРљРѕРґ1РЎ"
 					StoredProc.ParamByName("UNITCODE").value="Contracts"
 					StoredProc.ParamByName("RN_SOTR").value=old_RN
-					StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+					StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
 				end if
 			end if
 		next
-		MyFile.Write("INFO "&now()&vbTab&" Договора загружены. Всего обработано: "& object_counter &vbNewLine&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р”РѕРіРѕРІРѕСЂР° Р·Р°РіСЂСѓР¶РµРЅС‹. Р’СЃРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРѕ: "& object_counter &vbNewLine&vbNewLine)
 	else
-		MyFile.Write("INFO "&now()&vbTab&" В текущей выгрузке на найдено информации о договорах."&vbNewLine&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р’ С‚РµРєСѓС‰РµР№ РІС‹РіСЂСѓР·РєРµ РЅР° РЅР°Р№РґРµРЅРѕ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РґРѕРіРѕРІРѕСЂР°С…."&vbNewLine&vbNewLine)
 	end if
 	
-	'НАХОДИМ УЗЕЛ "СписанияСРасчетногоСчета"'
-	Set Outcoming = xmlParser.selectNodes("//СписанияСРасчетногоСчета/Строки")
+	'РќРђРҐРћР”РРњ РЈР—Р•Р› "РЎРїРёСЃР°РЅРёСЏРЎР Р°СЃС‡РµС‚РЅРѕРіРѕРЎС‡РµС‚Р°"'
+	Set Outcoming = xmlParser.selectNodes("//РЎРїРёСЃР°РЅРёСЏРЎР Р°СЃС‡РµС‚РЅРѕРіРѕРЎС‡РµС‚Р°/РЎС‚СЂРѕРєРё")
 	If Outcoming.length > 0 then
 		object_counter = 0
 		For Each nodeNode In Outcoming
@@ -1203,34 +1203,34 @@ sub xml_import
 						
 			object_counter = object_counter + 1
 			
-			Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("Ссылка").text)&"%' and docs_prop_rn='104582883' and unitcode='BankDocuments'"
+			Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"%' and docs_prop_rn='104582883' and unitcode='BankDocuments'"
 			Query.Open
 			If Query.IsEmpty then
-				MyFile.Write("INFO "&now()&vbTab&" В Парус не найден документ списания ДС с кодом "&trim(nodeNode.selectSingleNode("Ссылка").text)&"  "&nodeNode.selectSingleNode("ВхНомер").text&" "&nodeNode.selectSingleNode("ВхДата").text&" - создаю новый документ."&vbNewLine)
+				MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ РґРѕРєСѓРјРµРЅС‚ СЃРїРёСЃР°РЅРёСЏ Р”РЎ СЃ РєРѕРґРѕРј "&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"  "&nodeNode.selectSingleNode("Р’С…РќРѕРјРµСЂ").text&" "&nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text&" - СЃРѕР·РґР°СЋ РЅРѕРІС‹Р№ РґРѕРєСѓРјРµРЅС‚."&vbNewLine)
 				
-				'ПОЛУЧИМ ГОД ИЗ ДАТЫ
-				DATE_array	= Split(nodeNode.selectSingleNode("ВхДата").text, "-")
+				'РџРћР›РЈР§РРњ Р“РћР” РР— Р”РђРўР«
+				DATE_array	= Split(nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text, "-")
 				DATE_year	= DATE_array(0)
 				
-				'ПОЛУЧИМ ПОРЯДКОВЫЙ НОМЕР
+				'РџРћР›РЈР§РРњ РџРћР РЇР”РљРћР’Р«Р™ РќРћРњР•Р 
 				StoredProc.StoredProcName="P_BANKDOCS_GETNEXTNUMB"
 				StoredProc.ParamByName("NCOMPANY").value		= 42903
-				StoredProc.ParamByName("SJUR_PERS").value		= "НК ТЭЦ"
-				StoredProc.ParamByName("DBANK_DOCDATE").value	= ConvDate(nodeNode.selectSingleNode("ВхДата").text)
-				StoredProc.ParamByName("SBANK_DOCTYPE").value	= "ИсходП/П"
+				StoredProc.ParamByName("SJUR_PERS").value		= "РќРљ РўР­Р¦"
+				StoredProc.ParamByName("DBANK_DOCDATE").value	= ConvDate(nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text)
+				StoredProc.ParamByName("SBANK_DOCTYPE").value	= "РСЃС…РѕРґРџ/Рџ"
 				StoredProc.ParamByName("SBANK_DOCPREF").value	= DATE_year
 				StoredProc.ExecProc
 				banknumb = StoredProc.ParamByName("SBANK_NUMB").value
 				
-				'ВЫДЕЛИМ ДАТУ ИЗ СТРОКИ ВИДА датаТвремя
-				DATETIME_array	= Split(nodeNode.selectSingleNode("Дата").text, "T")
+				'Р’Р«Р”Р•Р›РРњ Р”РђРўРЈ РР— РЎРўР РћРљР Р’РР”Рђ РґР°С‚Р°РўРІСЂРµРјСЏ
+				DATETIME_array	= Split(nodeNode.selectSingleNode("Р”Р°С‚Р°").text, "T")
 				DATEONLY = DATETIME_array(0)
 				
-				'ПОЛУЧИМ ДАННЫЕ ДОГОВОРА, ЕСЛИ В ДОКУМЕНТЕ ТОЛЬКО 1 ДОГОВОР
-				Set TableRows = nodeNode.selectNodes("ТабЧасть/Строки")
+				'РџРћР›РЈР§РРњ Р”РђРќРќР«Р• Р”РћР“РћР’РћР Рђ, Р•РЎР›Р Р’ Р”РћРљРЈРњР•РќРўР• РўРћР›Р¬РљРћ 1 Р”РћР“РћР’РћР 
+				Set TableRows = nodeNode.selectNodes("РўР°Р±Р§Р°СЃС‚СЊ/РЎС‚СЂРѕРєРё")
 				If TableRows.length = 1 then
 					Set Node = TableRows.nextNode()
-					Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&Node.selectSingleNode("Договор").text&"' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - код свойства "Код 1С"
+					Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&Node.selectSingleNode("Р”РѕРіРѕРІРѕСЂ").text&"' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ 1РЎ"
 					Query.Open
 					If not Query.IsEmpty then
 						Query.SQL.Text="select DOC_TYPE, DOC_PREF, DOC_NUMB, DOC_DATE from CONTRACTS where RN='"&Query.FieldByname("UNIT_RN").value&"'"
@@ -1245,40 +1245,40 @@ sub xml_import
 						Query.Close
 					end if
 					
-					'ПОЛУЧИМ СТАВКУ НДС И ЕЕ ЗНАЧЕНИЕ
-					If Node.selectSingleNode("СтавкаНДС").text="БезНДС" or Node.selectSingleNode("СтавкаНДС").text="" then
+					'РџРћР›РЈР§РРњ РЎРўРђР’РљРЈ РќР”РЎ Р Р•Р• Р—РќРђР§Р•РќРР•
+					If Node.selectSingleNode("РЎС‚Р°РІРєР°РќР”РЎ").text="Р‘РµР·РќР”РЎ" or Node.selectSingleNode("РЎС‚Р°РІРєР°РќР”РЎ").text="" then
 						TAXrate	= 0
 						Tax		= 0
 					else
-						TAXrate	= Mid(Node.selectSingleNode("СтавкаНДС").text, 4)
-						Tax		= Replace(Node.selectSingleNode("СуммаНДС").text, ".", ",")
+						TAXrate	= Mid(Node.selectSingleNode("РЎС‚Р°РІРєР°РќР”РЎ").text, 4)
+						Tax		= Replace(Node.selectSingleNode("РЎСѓРјРјР°РќР”РЎ").text, ".", ",")
 					End if
 				end if				
 
-				'НАЙДЕМ МНЕМОКОД НАШЕЙ ОРГАНИЗАЦИИ ПО ЕЕ КОДУ SAP
-				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='0000112063' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - код свойства "Код SAP" (1ИЗМЕНИТЬ ПОСЛЕ ПЕРЕНОСА В ПРОДУКТИВ)
+				'РќРђР™Р”Р•Рњ РњРќР•РњРћРљРћР” РќРђРЁР•Р™ РћР Р“РђРќРР—РђР¦РР РџРћ Р•Р• РљРћР”РЈ SAP
+				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='0000112063' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP" (1РР—РњР•РќРРўР¬ РџРћРЎР›Р• РџР•Р Р•РќРћРЎРђ Р’ РџР РћР”РЈРљРўРР’)
 				Query.Open
 				Query.SQL.Text="select AGNABBR from AGNLIST where RN='"&Query.FieldByname("UNIT_RN").value&"'"
 				Query.Open
 				SAGENT_FROM = Query.FieldByname("AGNABBR").value
 				Query.Close
 				
-				'ПОЛУЧИМ НОМЕР СТРОКИ БАНКОВСКОГО СЧЕТА ОРГАНИЗАЦИИ ЧЕРЕЗ НОМЕР ЭТОГО СЧЕТА
-				Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & Trim(nodeNode.selectSingleNode("СчетОрганизацииБИК").text) & "'"
+				'РџРћР›РЈР§РРњ РќРћРњР•Р  РЎРўР РћРљР Р‘РђРќРљРћР’РЎРљРћР“Рћ РЎР§Р•РўРђ РћР Р“РђРќРР—РђР¦РР Р§Р•Р Р•Р— РќРћРњР•Р  Р­РўРћР“Рћ РЎР§Р•РўРђ
+				Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРёР‘РРљ").text) & "'"
 				Query.Open
 				If not Query.IsEmpty then
-					Query.SQL.Text	= "select STRCODE from AGNACC where AGNACC='"& Trim(nodeNode.selectSingleNode("СчетОрганизации").text) &"' and AGNBANKS='" & Query.FieldByname("NRN").value & "' and AGNRN='5805775'"
+					Query.SQL.Text	= "select STRCODE from AGNACC where AGNACC='"& Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text) &"' and AGNBANKS='" & Query.FieldByname("NRN").value & "' and AGNRN='5805775'"
 					Query.Open
 					jur_strcode		= Query.FieldByname("STRCODE").value
 					Query.Close
 				else
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Для банковского счета с номером "&nodeNode.selectSingleNode("СчетОрганизации").text&" в Парус не найден БИК "&nodeNode.selectSingleNode("СчетОрганизацииБИК").text&" - делаю останов для отладки."&vbNewLine)
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р”Р»СЏ Р±Р°РЅРєРѕРІСЃРєРѕРіРѕ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text&" РІ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р‘РРљ "&nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРёР‘РРљ").text&" - РґРµР»Р°СЋ РѕСЃС‚Р°РЅРѕРІ РґР»СЏ РѕС‚Р»Р°РґРєРё."&vbNewLine)
 				end if
 				
 				
-				'ИЩЕМ КОНТРАГЕНТА И СЧЕТ В ЗАВИСИМОСТИ ОТ РАЗЛИЧНЫХ УСЛОВИЙ
-				if nodeNode.selectSingleNode("ВидОперации").text = "ПереводНаДругойСчет" then
-					'КОНТРАГЕНТ - ТЭЦ
+				'РР©Р•Рњ РљРћРќРўР РђР“Р•РќРўРђ Р РЎР§Р•Рў Р’ Р—РђР’РРЎРРњРћРЎРўР РћРў Р РђР—Р›РР§РќР«РҐ РЈРЎР›РћР’РР™
+				if nodeNode.selectSingleNode("Р’РёРґРћРїРµСЂР°С†РёРё").text = "РџРµСЂРµРІРѕРґРќР°Р”СЂСѓРіРѕР№РЎС‡РµС‚" then
+					'РљРћРќРўР РђР“Р•РќРў - РўР­Р¦
 					Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='0000112063' and docs_prop_rn='105510718' and unitcode='AGNLIST'"
 					Query.Open
 					agn_rn = Query.FieldByname("UNIT_RN").value
@@ -1286,11 +1286,11 @@ sub xml_import
 					Query.Open
 					agn_abbr = Query.FieldByname("AGNABBR").value
 					
-					'CЧЕТ - ПО ЕГО НОМЕРУ
-					agnaccbik		= Trim(nodeNode.selectSingleNode("СчетКонтрагентаБИК").text)
-					agnacc			= Trim(nodeNode.selectSingleNode("СчетКонтрагента").text)
-					If not nodeNode.selectSingleNode("СчетКонтрагентаБИК").text="" then
-						Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & agnaccbik & "'"
+					'CР§Р•Рў - РџРћ Р•Р“Рћ РќРћРњР•Р РЈ
+					agnaccbik		= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text)
+					agnacc			= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text)
+					If not nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text="" then
+						Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & agnaccbik & "'"
 						Query.Open
 						bankrn = Query.FieldByname("NRN").value
 					else
@@ -1302,33 +1302,33 @@ sub xml_import
 						If not Query.IsEmpty then
 							agn_strcode = Query.FieldByname("STRCODE").value
 						else
-							'НЕ НАШЛИ ПО НОМЕРУ - ПО НАЗВАНИЮ БАНКА							
+							'РќР• РќРђРЁР›Р РџРћ РќРћРњР•Р РЈ - РџРћ РќРђР—Р’РђРќРР® Р‘РђРќРљРђ							
 							Query.SQL.Text = "select STRCODE from agnacc where agnrn='5805775' and agnbanks='"&bankrn&"'"
 							Query.Open
 							agn_strcode = Query.FieldByname("STRCODE").value
 						end if
 					else
-						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Для банковского счета с номером "&nodeNode.selectSingleNode("СчетКонтрагента").text&" в Парус не найден БИК "&nodeNode.selectSingleNode("СчетКонтрагентаБИК").text&" - делаю останов для отладки."&vbNewLine)
+						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р”Р»СЏ Р±Р°РЅРєРѕРІСЃРєРѕРіРѕ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text&" РІ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р‘РРљ "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text&" - РґРµР»Р°СЋ РѕСЃС‚Р°РЅРѕРІ РґР»СЏ РѕС‚Р»Р°РґРєРё."&vbNewLine)
 					end if
 				else
-					'ИЩЕМ КОНТРАГЕНТА
-					Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='"&RTrim(nodeNode.selectSingleNode("Контрагент").text)&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"
+					'РР©Р•Рњ РљРћРќРўР РђР“Р•РќРўРђ
+					Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='"&RTrim(nodeNode.selectSingleNode("РљРѕРЅС‚СЂР°РіРµРЅС‚").text)&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"
 					Query.Open
 					agn_rn = Query.FieldByname("UNIT_RN").value
 					Query.SQL.Text="select AGNABBR from AGNLIST where RN='"&agn_rn&"'"
 					Query.Open
 					agn_abbr = Query.FieldByname("AGNABBR").value
 					
-					'ИЩЕМ СЧЕТ
-					If nodeNode.selectSingleNode("СчетКонтрагента").text = "" then 'ПЕРВЫЙ ПОПАВШИЙСЯ СЧЕТ
+					'РР©Р•Рњ РЎР§Р•Рў
+					If nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text = "" then 'РџР•Р Р’Р«Р™ РџРћРџРђР’РЁРР™РЎРЇ РЎР§Р•Рў
 						Query.SQL.Text 	= "select STRCODE from AGNACC where AGNRN='"&agn_rn&"'"
 						Query.Open
 						agn_strcode 	= Query.FieldByname("STRCODE").value
 					else
-						agnaccbik		= Trim(nodeNode.selectSingleNode("СчетКонтрагентаБИК").text)
-						agnacc			= Trim(nodeNode.selectSingleNode("СчетКонтрагента").text)
-						If not nodeNode.selectSingleNode("СчетКонтрагентаБИК").text="" then
-							Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & agnaccbik & "'"
+						agnaccbik		= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text)
+						agnacc			= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text)
+						If not nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text="" then
+							Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & agnaccbik & "'"
 							Query.Open
 							bankrn = Query.FieldByname("NRN").value
 						else
@@ -1346,73 +1346,73 @@ sub xml_import
 					end if
 				end if
 				
-				'НАЙДЕМ ВИД ФИН ОПЕРАЦИИ ПО ЕГО КОДУ 1С
-				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='р"&nodeNode.selectSingleNode("ВидОперации").text&"' and docs_prop_rn='104582941' and unitcode='TypeOpersPay'"        ' 104582941 - код свойства "Код SAP"
+				'РќРђР™Р”Р•Рњ Р’РР” Р¤РРќ РћРџР•Р РђР¦РР РџРћ Р•Р“Рћ РљРћР”РЈ 1РЎ
+				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='СЂ"&nodeNode.selectSingleNode("Р’РёРґРћРїРµСЂР°С†РёРё").text&"' and docs_prop_rn='104582941' and unitcode='TypeOpersPay'"        ' 104582941 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP"
 				Query.Open
 				Query.SQL.Text="select TYPOPER_MNEMO from DICTOPER where RN='"&Query.FieldByname("UNIT_RN").value&"'"
 				Query.Open
 				typeoper_mnemo = Query.FieldByname("TYPOPER_MNEMO").value
 				Query.Close
 				
-				'ПОЛУЧИМ НАИМЕНОВАНИЕ ВАЛЮТЫ ПО ЕЕ КОДУ
-				Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("ВалютаДокумента").text&"'"
+				'РџРћР›РЈР§РРњ РќРђРРњР•РќРћР’РђРќРР• Р’РђР›Р®РўР« РџРћ Р•Р• РљРћР”РЈ
+				Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р”РѕРєСѓРјРµРЅС‚Р°").text&"'"
 				Query.Open
 				If Query.IsEmpty then
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Валюта с кодом "&nodeNode.selectSingleNode("ВалютаДокумента").text&" из договора <<"&comment&">> не найдена. Используется значение по-умолчанию - RUR")
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’Р°Р»СЋС‚Р° СЃ РєРѕРґРѕРј "&nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р”РѕРєСѓРјРµРЅС‚Р°").text&" РёР· РґРѕРіРѕРІРѕСЂР° <<"&comment&">> РЅРµ РЅР°Р№РґРµРЅР°. РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ Р·РЅР°С‡РµРЅРёРµ РїРѕ-СѓРјРѕР»С‡Р°РЅРёСЋ - RUR")
 					scurrency = "RUR"
 				else
-					scurrency = nodeNode.selectSingleNode("ВалютаДокумента").text
+					scurrency = nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р”РѕРєСѓРјРµРЅС‚Р°").text
 				end if
 				Query.Close
 				
-				'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОКУМЕНТЕ СПИСАНИЯ ДС
+				'РЎРћР—Р”РђР•Рњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ Р”РћРљРЈРњР•РќРўР• РЎРџРРЎРђРќРРЇ Р”РЎ
 				StoredProc.StoredProcName="P_BANKDOCSACC_INSERT"
-				StoredProc.ParamByName("nCOMPANY").value		= 42903			'код подразделения
-				StoredProc.ParamByName("nCRN").value			= 104583621		'код каталога 1ИЗМЕНИТЬ ПОСЛЕ ПЕРЕНОСА В ПРОДУКТИВ
-				StoredProc.ParamByName("SBANK_TYPEDOC").value	= "ИсходП/П"
+				StoredProc.ParamByName("nCOMPANY").value		= 42903			'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+				StoredProc.ParamByName("nCRN").value			= 104583621		'РєРѕРґ РєР°С‚Р°Р»РѕРіР° 1РР—РњР•РќРРўР¬ РџРћРЎР›Р• РџР•Р Р•РќРћРЎРђ Р’ РџР РћР”РЈРљРўРР’
+				StoredProc.ParamByName("SBANK_TYPEDOC").value	= "РСЃС…РѕРґРџ/Рџ"
 				StoredProc.ParamByName("SBANK_PREFDOC").value	= DATE_year
 				StoredProc.ParamByName("SBANK_NUMBDOC").value	= banknumb
 				StoredProc.ParamByName("DBANK_DATEDOC").value	= ConvDate(DATEONLY)
 				StoredProc.ParamByName("SVALID_TYPEDOC").value	= doctype
 				StoredProc.ParamByName("SVALID_NUMBDOC").value	= docpref & delimiter & docnumb
 				StoredProc.ParamByName("DVALID_DATEDOC").value	= docdate
-				StoredProc.ParamByName("SFROM_NUMB").value		= nodeNode.selectSingleNode("ВхНомер").text
-				StoredProc.ParamByName("DFROM_DATE").value		= ConvDate(nodeNode.selectSingleNode("ВхДата").text)
+				StoredProc.ParamByName("SFROM_NUMB").value		= nodeNode.selectSingleNode("Р’С…РќРѕРјРµСЂ").text
+				StoredProc.ParamByName("DFROM_DATE").value		= ConvDate(nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text)
 				StoredProc.ParamByName("SAGENT_FROM").value		= SAGENT_FROM
 				StoredProc.ParamByName("SAGENTF_ACC").value		= jur_strcode
 				StoredProc.ParamByName("SAGENT_TO").value		= agn_abbr
 				StoredProc.ParamByName("SAGENTT_ACC").value		= agn_strcode
 				StoredProc.ParamByName("STYPE_OPER").value		= typeoper_mnemo
-				StoredProc.ParamByName("SPAY_INFO").value		= nodeNode.selectSingleNode("НазначениеПлатежа").text
+				StoredProc.ParamByName("SPAY_INFO").value		= nodeNode.selectSingleNode("РќР°Р·РЅР°С‡РµРЅРёРµРџР»Р°С‚РµР¶Р°").text
 				StoredProc.ParamByName("SPAY_NOTE").value		= SPAY_NOTE
-				StoredProc.ParamByName("NPAY_SUM").value		= Replace(nodeNode.selectSingleNode("СуммаДокумента").text, ".", ",")
+				StoredProc.ParamByName("NPAY_SUM").value		= Replace(nodeNode.selectSingleNode("РЎСѓРјРјР°Р”РѕРєСѓРјРµРЅС‚Р°").text, ".", ",")
 				StoredProc.ParamByName("NTAX_SUM").value		= Tax
 				StoredProc.ParamByName("NPERCENT_TAX_SUM").value= TAXrate
 				StoredProc.ParamByName("SCURRENCY").value		= scurrency
-				StoredProc.ParamByName("SJUR_PERS").value		= "НК ТЭЦ"
+				StoredProc.ParamByName("SJUR_PERS").value		= "РќРљ РўР­Р¦"
 				StoredProc.ParamByName("NUNALLOTTED_SUM").value	= 0
 				StoredProc.ParamByName("NIS_ADVANCE").value		= 0
 				StoredProc.ExecProc
 				newRN = StoredProc.ParamByName("nRN").value
 				
-				'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
-				StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДДСКод1С
-				StoredProc.ParamByName("PROPERTY").value="ДДСКод1С"
+				'Р—РђРџРРЁР•Рњ Р”РђРќРќР«Р• Р’ РЎР’РћР™РЎРўР’Рђ Р”РћРљРЈРњР•РќРўРђ
+				StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Р”Р”РЎРљРѕРґ1РЎ
+				StoredProc.ParamByName("PROPERTY").value="Р”Р”РЎРљРѕРґ1РЎ"
 				StoredProc.ParamByName("UNITCODE").value="BankDocuments"
 				StoredProc.ParamByName("RN_SOTR").value=newRN
-				StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+				StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)
 				StoredProc.ParamByName("NUM_VAL").value=NULL
 				StoredProc.ExecProc
 			else
-				MyFile.Write("INFO "&now()&vbTab&" В Парус найден документ списания ДС с кодом "&trim(nodeNode.selectSingleNode("Ссылка").text)&"  "&nodeNode.selectSingleNode("ВхНомер").text&" "&nodeNode.selectSingleNode("ВхДата").text&" - пропускаю документ."&vbNewLine)
+				MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ РґРѕРєСѓРјРµРЅС‚ СЃРїРёСЃР°РЅРёСЏ Р”РЎ СЃ РєРѕРґРѕРј "&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"  "&nodeNode.selectSingleNode("Р’С…РќРѕРјРµСЂ").text&" "&nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text&" - РїСЂРѕРїСѓСЃРєР°СЋ РґРѕРєСѓРјРµРЅС‚."&vbNewLine)
 			End if
 			Query.Close
 		next
-		MyFile.Write("INFO "&now()&vbTab&" Документы списания с расчетных счетов загружены. Всего обработано: "& object_counter & vbNewLine&vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р”РѕРєСѓРјРµРЅС‚С‹ СЃРїРёСЃР°РЅРёСЏ СЃ СЂР°СЃС‡РµС‚РЅС‹С… СЃС‡РµС‚РѕРІ Р·Р°РіСЂСѓР¶РµРЅС‹. Р’СЃРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРѕ: "& object_counter & vbNewLine&vbNewLine)
 	end if
 	
-	'НАХОДИМ УЗЕЛ "ПоступленияНаРасчетныйСчет"'
-	Set Incoming = xmlParser.selectNodes("//ПоступленияНаРасчетныйСчет/Строки")
+	'РќРђРҐРћР”РРњ РЈР—Р•Р› "РџРѕСЃС‚СѓРїР»РµРЅРёСЏРќР°Р Р°СЃС‡РµС‚РЅС‹Р№РЎС‡РµС‚"'
+	Set Incoming = xmlParser.selectNodes("//РџРѕСЃС‚СѓРїР»РµРЅРёСЏРќР°Р Р°СЃС‡РµС‚РЅС‹Р№РЎС‡РµС‚/РЎС‚СЂРѕРєРё")
 	If Incoming.length > 0 then
 		object_counter = 0
 		For Each nodeNode In Incoming
@@ -1439,30 +1439,30 @@ sub xml_import
 			
 			object_counter = object_counter + 1
 			
-			Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("Ссылка").text)&"%' and docs_prop_rn='104582883' and unitcode='BankDocuments'"
+			Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"%' and docs_prop_rn='104582883' and unitcode='BankDocuments'"
 			Query.Open
 			If Query.IsEmpty then	
-				MyFile.Write("INFO "&now()&vbTab&" В Парус не найден документ поступления ДС с кодом "&trim(nodeNode.selectSingleNode("Ссылка").text)&" "&nodeNode.selectSingleNode("ВхНомер").text&" "&nodeNode.selectSingleNode("ВхДата").text&" - создаю новый документ."&vbNewLine)
+				MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ РґРѕРєСѓРјРµРЅС‚ РїРѕСЃС‚СѓРїР»РµРЅРёСЏ Р”РЎ СЃ РєРѕРґРѕРј "&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&" "&nodeNode.selectSingleNode("Р’С…РќРѕРјРµСЂ").text&" "&nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text&" - СЃРѕР·РґР°СЋ РЅРѕРІС‹Р№ РґРѕРєСѓРјРµРЅС‚."&vbNewLine)
 				
-				'ПОЛУЧИМ ГОД ИЗ ДАТЫ
-				DATE_array	= Split(nodeNode.selectSingleNode("ВхДата").text, "-")
+				'РџРћР›РЈР§РРњ Р“РћР” РР— Р”РђРўР«
+				DATE_array	= Split(nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text, "-")
 				DATE_year	= DATE_array(0)
 				
-				'ПОЛУЧИМ ПОРЯДКОВЫЙ НОМЕР
+				'РџРћР›РЈР§РРњ РџРћР РЇР”РљРћР’Р«Р™ РќРћРњР•Р 
 				StoredProc.StoredProcName="P_BANKDOCS_GETNEXTNUMB"
 				StoredProc.ParamByName("NCOMPANY").value		= 42903
-				StoredProc.ParamByName("SJUR_PERS").value		= "НК ТЭЦ"
-				StoredProc.ParamByName("DBANK_DOCDATE").value	= ConvDate(nodeNode.selectSingleNode("ВхДата").text)
-				StoredProc.ParamByName("SBANK_DOCTYPE").value	= "ВходП/П"
+				StoredProc.ParamByName("SJUR_PERS").value		= "РќРљ РўР­Р¦"
+				StoredProc.ParamByName("DBANK_DOCDATE").value	= ConvDate(nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text)
+				StoredProc.ParamByName("SBANK_DOCTYPE").value	= "Р’С…РѕРґРџ/Рџ"
 				StoredProc.ParamByName("SBANK_DOCPREF").value	= DATE_year
 				StoredProc.ExecProc
 				banknumb = StoredProc.ParamByName("SBANK_NUMB").value
 				
-				'ВЫДЕЛИМ ДАТУ ИЗ СТРОКИ ВИДА датаТвремя
-				DATETIME_array	= Split(nodeNode.selectSingleNode("Дата").text, "T")
+				'Р’Р«Р”Р•Р›РРњ Р”РђРўРЈ РР— РЎРўР РћРљР Р’РР”Рђ РґР°С‚Р°РўРІСЂРµРјСЏ
+				DATETIME_array	= Split(nodeNode.selectSingleNode("Р”Р°С‚Р°").text, "T")
 				DATEONLY = DATETIME_array(0)
 				
-				'ПОЛУЧИМ ДАННЫЕ ДОГОВОРА, ЕСЛИ В ДОКУМЕНТЕ ТОЛЬКО 1 ДОГОВОР
+				'РџРћР›РЈР§РРњ Р”РђРќРќР«Р• Р”РћР“РћР’РћР Рђ, Р•РЎР›Р Р’ Р”РћРљРЈРњР•РќРўР• РўРћР›Р¬РљРћ 1 Р”РћР“РћР’РћР 
 				docpref = NULL
 				docnumb = NULL
 				doctype = NULL
@@ -1470,10 +1470,10 @@ sub xml_import
 				delimiter = NULL
 				TAXrate	= 0
 				Tax		= 0
-				Set TableRows = nodeNode.selectNodes("ТабЧасть/Строки")
+				Set TableRows = nodeNode.selectNodes("РўР°Р±Р§Р°СЃС‚СЊ/РЎС‚СЂРѕРєРё")
 				If TableRows.length = 1 then
 					Set Node = TableRows.nextNode()
-					Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&Node.selectSingleNode("Договор").text&"' and docs_prop_rn='87456099' and unitcode='Contracts'"        ' 87456099 - код свойства "ДогКод1С"
+					Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&Node.selectSingleNode("Р”РѕРіРѕРІРѕСЂ").text&"' and docs_prop_rn='87456099' and unitcode='Contracts'"        ' 87456099 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "Р”РѕРіРљРѕРґ1РЎ"
 					Query.Open
 					If not Query.IsEmpty then
 						Query.SQL.Text="select DOC_TYPE, DOC_PREF, DOC_NUMB, DOC_DATE from CONTRACTS where RN='"&Query.FieldByname("UNIT_RN").value&"'"
@@ -1488,39 +1488,39 @@ sub xml_import
 						Query.Close
 					end if
 					
-					'ПОЛУЧИМ СТАВКУ НДС И ЕЕ ЗНАЧЕНИЕ
-					If Node.selectSingleNode("СтавкаНДС").text="БезНДС" or Node.selectSingleNode("СтавкаНДС").text="" then
+					'РџРћР›РЈР§РРњ РЎРўРђР’РљРЈ РќР”РЎ Р Р•Р• Р—РќРђР§Р•РќРР•
+					If Node.selectSingleNode("РЎС‚Р°РІРєР°РќР”РЎ").text="Р‘РµР·РќР”РЎ" or Node.selectSingleNode("РЎС‚Р°РІРєР°РќР”РЎ").text="" then
 						TAXrate	= 0
 						Tax		= 0
 					else
-						TAXrate	= Mid(Node.selectSingleNode("СтавкаНДС").text, 4)
-						Tax		= Replace(Node.selectSingleNode("СуммаНДС").text, ".", ",")
+						TAXrate	= Mid(Node.selectSingleNode("РЎС‚Р°РІРєР°РќР”РЎ").text, 4)
+						Tax		= Replace(Node.selectSingleNode("РЎСѓРјРјР°РќР”РЎ").text, ".", ",")
 					End if
 				end if							
 				
-				'НАЙДЕМ МНЕМОКОД НАШЕЙ ОРГАНИЗАЦИИ ПО ЕЕ КОДУ SAP
-				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='0000112063' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - код свойства "Код SAP" (1ИЗМЕНИТЬ ПОСЛЕ ПЕРЕНОСА В ПРОДУКТИВ)
+				'РќРђР™Р”Р•Рњ РњРќР•РњРћРљРћР” РќРђРЁР•Р™ РћР Р“РђРќРР—РђР¦РР РџРћ Р•Р• РљРћР”РЈ SAP
+				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='0000112063' and docs_prop_rn='105510718' and unitcode='AGNLIST'"        ' 105510718 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP" (1РР—РњР•РќРРўР¬ РџРћРЎР›Р• РџР•Р Р•РќРћРЎРђ Р’ РџР РћР”РЈРљРўРР’)
 				Query.Open
 				Query.SQL.Text="select AGNABBR from AGNLIST where RN='"&Query.FieldByname("UNIT_RN").value&"'"
 				Query.Open
 				SAGENT_TO = Query.FieldByname("AGNABBR").value
 				Query.Close
 				
-				'ПОЛУЧИМ НОМЕР СТРОКИ БАНКОВСКОГО СЧЕТА ОРГАНИЗАЦИИ ЧЕРЕЗ НОМЕР ЭТОГО СЧЕТА
-				Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & Trim(nodeNode.selectSingleNode("СчетОрганизацииБИК").text) & "'"
+				'РџРћР›РЈР§РРњ РќРћРњР•Р  РЎРўР РћРљР Р‘РђРќРљРћР’РЎРљРћР“Рћ РЎР§Р•РўРђ РћР Р“РђРќРР—РђР¦РР Р§Р•Р Р•Р— РќРћРњР•Р  Р­РўРћР“Рћ РЎР§Р•РўРђ
+				Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРёР‘РРљ").text) & "'"
 				Query.Open
 				If not Query.IsEmpty then
-					Query.SQL.Text	= "select STRCODE from AGNACC where AGNACC='"& Trim(nodeNode.selectSingleNode("СчетОрганизации").text) &"' and AGNBANKS='" & Query.FieldByname("NRN").value & "' and AGNRN='5805775'"
+					Query.SQL.Text	= "select STRCODE from AGNACC where AGNACC='"& Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text) &"' and AGNBANKS='" & Query.FieldByname("NRN").value & "' and AGNRN='5805775'"
 					Query.Open
 					jur_strcode		= Query.FieldByname("STRCODE").value
 					Query.Close
 				else
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Для банковского счета с номером "&nodeNode.selectSingleNode("СчетОрганизации").text&" в Парус не найден БИК "&nodeNode.selectSingleNode("СчетОрганизацииБИК").text&" - делаю останов для отладки."&vbNewLine)
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р”Р»СЏ Р±Р°РЅРєРѕРІСЃРєРѕРіРѕ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРё").text&" РІ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р‘РРљ "&nodeNode.selectSingleNode("РЎС‡РµС‚РћСЂРіР°РЅРёР·Р°С†РёРёР‘РРљ").text&" - РґРµР»Р°СЋ РѕСЃС‚Р°РЅРѕРІ РґР»СЏ РѕС‚Р»Р°РґРєРё."&vbNewLine)
 				end if
 				
-				'ИЩЕМ КОНТРАГЕНТА И СЧЕТ В ЗАВИСИМОСТИ ОТ РАЗЛИЧНЫХ УСЛОВИЙ
-				if nodeNode.selectSingleNode("ВидОперации").text = "ПереводСДругогоСчета" then
-					'КОНТРАГЕНТ - ТЭЦ
+				'РР©Р•Рњ РљРћРќРўР РђР“Р•РќРўРђ Р РЎР§Р•Рў Р’ Р—РђР’РРЎРРњРћРЎРўР РћРў Р РђР—Р›РР§РќР«РҐ РЈРЎР›РћР’РР™
+				if nodeNode.selectSingleNode("Р’РёРґРћРїРµСЂР°С†РёРё").text = "РџРµСЂРµРІРѕРґРЎР”СЂСѓРіРѕРіРѕРЎС‡РµС‚Р°" then
+					'РљРћРќРўР РђР“Р•РќРў - РўР­Р¦
 					Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='0000112063' and docs_prop_rn='105510718' and unitcode='AGNLIST'"
 					Query.Open
 					agn_rn = Query.FieldByname("UNIT_RN").value
@@ -1528,16 +1528,16 @@ sub xml_import
 					Query.Open
 					agn_abbr = Query.FieldByname("AGNABBR").value
 					
-					if nodeNode.selectSingleNode("Контрагент").text="" or nodeNode.selectSingleNode("СчетКонтрагента").text = "" then
-						SPAY_NOTE = "Контрагент (код SAP) "&nodeNode.selectSingleNode("Контрагент").text&", счет "&nodeNode.selectSingleNode("СчетКонтрагента").text
+					if nodeNode.selectSingleNode("РљРѕРЅС‚СЂР°РіРµРЅС‚").text="" or nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text = "" then
+						SPAY_NOTE = "РљРѕРЅС‚СЂР°РіРµРЅС‚ (РєРѕРґ SAP) "&nodeNode.selectSingleNode("РљРѕРЅС‚СЂР°РіРµРЅС‚").text&", СЃС‡РµС‚ "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text
 						agn_abbr = NULL
 						agn_strcode = NULL
 					else
-						'CЧЕТ - ПО ЕГО НОМЕРУ
-						agnaccbik		= Trim(nodeNode.selectSingleNode("СчетКонтрагентаБИК").text)
-						agnacc			= Trim(nodeNode.selectSingleNode("СчетКонтрагента").text)
-						If not nodeNode.selectSingleNode("СчетКонтрагентаБИК").text="" then
-							Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & agnaccbik & "'"
+						'CР§Р•Рў - РџРћ Р•Р“Рћ РќРћРњР•Р РЈ
+						agnaccbik		= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text)
+						agnacc			= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text)
+						If not nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text="" then
+							Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & agnaccbik & "'"
 							Query.Open
 							bankrn = Query.FieldByname("NRN").value
 						else
@@ -1550,39 +1550,39 @@ sub xml_import
 							If not Query.IsEmpty then
 								agn_strcode = Query.FieldByname("STRCODE").value
 							else
-								'НЕ НАШЛИ ПО НОМЕРУ - ПО НАЗВАНИЮ БАНКА							
+								'РќР• РќРђРЁР›Р РџРћ РќРћРњР•Р РЈ - РџРћ РќРђР—Р’РђРќРР® Р‘РђРќРљРђ							
 								Query.SQL.Text = "select STRCODE from agnacc where agnrn='5805775' and agnbanks='"&bankrn&"'"
 								Query.Open
 								agn_strcode = Query.FieldByname("STRCODE").value
 							end if
 						else
-							MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Для банковского счета с номером "&nodeNode.selectSingleNode("СчетКонтрагента").text&" в Парус не найден БИК "&nodeNode.selectSingleNode("СчетКонтрагентаБИК").text&" - делаю останов для отладки."&vbNewLine)
+							MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р”Р»СЏ Р±Р°РЅРєРѕРІСЃРєРѕРіРѕ СЃС‡РµС‚Р° СЃ РЅРѕРјРµСЂРѕРј "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text&" РІ РџР°СЂСѓСЃ РЅРµ РЅР°Р№РґРµРЅ Р‘РРљ "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text&" - РґРµР»Р°СЋ РѕСЃС‚Р°РЅРѕРІ РґР»СЏ РѕС‚Р»Р°РґРєРё."&vbNewLine)
 						end if
 					end if		
 				else
-					if nodeNode.selectSingleNode("Контрагент").text = "" then
-						SPAY_NOTE = "Контрагент (код SAP) "&nodeNode.selectSingleNode("Контрагент").text&", счет "&nodeNode.selectSingleNode("СчетКонтрагента").text
+					if nodeNode.selectSingleNode("РљРѕРЅС‚СЂР°РіРµРЅС‚").text = "" then
+						SPAY_NOTE = "РљРѕРЅС‚СЂР°РіРµРЅС‚ (РєРѕРґ SAP) "&nodeNode.selectSingleNode("РљРѕРЅС‚СЂР°РіРµРЅС‚").text&", СЃС‡РµС‚ "&nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text
 						agn_abbr	= NULL
 						agn_strcode = NULL
 					else
-						'ИЩЕМ КОНТРАГЕНТА
-						Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("Контрагент").text&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"
+						'РР©Р•Рњ РљРћРќРўР РђР“Р•РќРўРђ
+						Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("РљРѕРЅС‚СЂР°РіРµРЅС‚").text&"' and docs_prop_rn='105510718' and unitcode='AGNLIST'"
 						Query.Open
 						agn_rn = Query.FieldByname("UNIT_RN").value
 						Query.SQL.Text="select AGNABBR from AGNLIST where RN='"&agn_rn&"'"
 						Query.Open
 						agn_abbr = Query.FieldByname("AGNABBR").value
 						
-						'ИЩЕМ СЧЕТ
-						If nodeNode.selectSingleNode("СчетКонтрагента").text = "" then	'ПЕРВЫЙ ПОПАВШИЙСЯ СЧЕТ
+						'РР©Р•Рњ РЎР§Р•Рў
+						If nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text = "" then	'РџР•Р Р’Р«Р™ РџРћРџРђР’РЁРР™РЎРЇ РЎР§Р•Рў
 							Query.SQL.Text 	= "select STRCODE from AGNACC where AGNRN='"&agn_rn&"'"
 							Query.Open
 							agn_strcode = Query.FieldByname("STRCODE").value
 						else
-							agnaccbik		= Trim(nodeNode.selectSingleNode("СчетКонтрагентаБИК").text)
-							agnacc			= Trim(nodeNode.selectSingleNode("СчетКонтрагента").text)
-							If not nodeNode.selectSingleNode("СчетКонтрагентаБИК").text="" then
-								Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='БАНК_" & agnaccbik & "'"
+							agnaccbik		= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text)
+							agnacc			= Trim(nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°").text)
+							If not nodeNode.selectSingleNode("РЎС‡РµС‚РљРѕРЅС‚СЂР°РіРµРЅС‚Р°Р‘РРљ").text="" then
+								Query.SQL.Text	= "select NRN from v_agnbanks where SCODE='Р‘РђРќРљ_" & agnaccbik & "'"
 								Query.Open
 								bankrn = Query.FieldByname("NRN").value
 							else
@@ -1601,100 +1601,100 @@ sub xml_import
 					end if
 				end if
 								
-				'НАЙДЕМ ВИД ФИН ОПЕРАЦИИ ПО ЕГО КОДУ 1С
-				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='п"&nodeNode.selectSingleNode("ВидОперации").text&"' and docs_prop_rn='104582941' and unitcode='TypeOpersPay'"        ' 104582941 - код свойства "Код SAP"
+				'РќРђР™Р”Р•Рњ Р’РР” Р¤РРќ РћРџР•Р РђР¦РР РџРћ Р•Р“Рћ РљРћР”РЈ 1РЎ
+				Query.Sql.Text="select UNIT_RN from docs_props_vals where str_value='Рї"&nodeNode.selectSingleNode("Р’РёРґРћРїРµСЂР°С†РёРё").text&"' and docs_prop_rn='104582941' and unitcode='TypeOpersPay'"        ' 104582941 - РєРѕРґ СЃРІРѕР№СЃС‚РІР° "РљРѕРґ SAP"
 				Query.Open
 				Query.SQL.Text="select TYPOPER_MNEMO from DICTOPER where RN='"&Query.FieldByname("UNIT_RN").value&"'"
 				Query.Open
 				typeoper_mnemo = Query.FieldByname("TYPOPER_MNEMO").value
 				Query.Close
 				
-				'ПОЛУЧИМ НАИМЕНОВАНИЕ ВАЛЮТЫ ПО ЕЕ КОДУ
-				Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("ВалютаДокумента").text&"'"
+				'РџРћР›РЈР§РРњ РќРђРРњР•РќРћР’РђРќРР• Р’РђР›Р®РўР« РџРћ Р•Р• РљРћР”РЈ
+				Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р”РѕРєСѓРјРµРЅС‚Р°").text&"'"
 				Query.Open
 				If Query.IsEmpty then
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Валюта с кодом "&nodeNode.selectSingleNode("ВалютаДокумента").text&" из договора <<"&comment&">> не найдена. Используется значение по-умолчанию - RUR")
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" Р’Р°Р»СЋС‚Р° СЃ РєРѕРґРѕРј "&nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р”РѕРєСѓРјРµРЅС‚Р°").text&" РёР· РґРѕРіРѕРІРѕСЂР° <<"&comment&">> РЅРµ РЅР°Р№РґРµРЅР°. РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ Р·РЅР°С‡РµРЅРёРµ РїРѕ-СѓРјРѕР»С‡Р°РЅРёСЋ - RUR")
 					scurrency = "RUR"
 				else
-					scurrency = nodeNode.selectSingleNode("ВалютаДокумента").text
+					scurrency = nodeNode.selectSingleNode("Р’Р°Р»СЋС‚Р°Р”РѕРєСѓРјРµРЅС‚Р°").text
 				end if
 				Query.Close
 								
-				'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОКУМЕНТЕ ПОСТУПЛЕНИЯ ДС
+				'РЎРћР—Р”РђР•Рњ Р—РђРџРРЎР¬ Рћ РќРћР’РћРњ Р”РћРљРЈРњР•РќРўР• РџРћРЎРўРЈРџР›Р•РќРРЇ Р”РЎ
 				StoredProc.StoredProcName="P_BANKDOCSACC_INSERT"
-				StoredProc.ParamByName("nCOMPANY").value		= 42903			'код подразделения
-				StoredProc.ParamByName("nCRN").value			= 104583621		'код каталога 1ИЗМЕНИТЬ ПОСЛЕ ПЕРЕНОСА В ПРОДУКТИВ
-				StoredProc.ParamByName("SBANK_TYPEDOC").value	= "ВходП/П"
+				StoredProc.ParamByName("nCOMPANY").value		= 42903			'РєРѕРґ РїРѕРґСЂР°Р·РґРµР»РµРЅРёСЏ
+				StoredProc.ParamByName("nCRN").value			= 104583621		'РєРѕРґ РєР°С‚Р°Р»РѕРіР° 1РР—РњР•РќРРўР¬ РџРћРЎР›Р• РџР•Р Р•РќРћРЎРђ Р’ РџР РћР”РЈРљРўРР’
+				StoredProc.ParamByName("SBANK_TYPEDOC").value	= "Р’С…РѕРґРџ/Рџ"
 				StoredProc.ParamByName("SBANK_PREFDOC").value	= DATE_year
 				StoredProc.ParamByName("SBANK_NUMBDOC").value	= banknumb
 				StoredProc.ParamByName("DBANK_DATEDOC").value	= ConvDate(DATEONLY)
 				StoredProc.ParamByName("SVALID_TYPEDOC").value	= doctype
 				StoredProc.ParamByName("SVALID_NUMBDOC").value	= docpref & delimiter & docnumb
 				StoredProc.ParamByName("DVALID_DATEDOC").value	= docdate
-				StoredProc.ParamByName("SFROM_NUMB").value		= nodeNode.selectSingleNode("ВхНомер").text
-				StoredProc.ParamByName("DFROM_DATE").value		= ConvDate(nodeNode.selectSingleNode("ВхДата").text)
+				StoredProc.ParamByName("SFROM_NUMB").value		= nodeNode.selectSingleNode("Р’С…РќРѕРјРµСЂ").text
+				StoredProc.ParamByName("DFROM_DATE").value		= ConvDate(nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text)
 				StoredProc.ParamByName("SAGENT_FROM").value		= agn_abbr
 				StoredProc.ParamByName("SAGENTF_ACC").value		= agn_strcode
 				StoredProc.ParamByName("SAGENT_TO").value		= SAGENT_TO
 				StoredProc.ParamByName("SAGENTT_ACC").value		= jur_strcode
 				StoredProc.ParamByName("STYPE_OPER").value		= typeoper_mnemo
-				StoredProc.ParamByName("SPAY_INFO").value		= nodeNode.selectSingleNode("НазначениеПлатежа").text 
+				StoredProc.ParamByName("SPAY_INFO").value		= nodeNode.selectSingleNode("РќР°Р·РЅР°С‡РµРЅРёРµРџР»Р°С‚РµР¶Р°").text 
 				StoredProc.ParamByName("SPAY_NOTE").value		= SPAY_NOTE
-				StoredProc.ParamByName("NPAY_SUM").value		= Replace(nodeNode.selectSingleNode("СуммаДокумента").text, ".", ",")
+				StoredProc.ParamByName("NPAY_SUM").value		= Replace(nodeNode.selectSingleNode("РЎСѓРјРјР°Р”РѕРєСѓРјРµРЅС‚Р°").text, ".", ",")
 				StoredProc.ParamByName("NTAX_SUM").value		= Tax
 				StoredProc.ParamByName("NPERCENT_TAX_SUM").value= TAXrate
 				StoredProc.ParamByName("SCURRENCY").value		= scurrency
-				StoredProc.ParamByName("SJUR_PERS").value		= "НК ТЭЦ"
+				StoredProc.ParamByName("SJUR_PERS").value		= "РќРљ РўР­Р¦"
 				StoredProc.ParamByName("NUNALLOTTED_SUM").value	= 0
 				StoredProc.ParamByName("NIS_ADVANCE").value		= 0
 				StoredProc.ExecProc
 				newRN = StoredProc.ParamByName("nRN").value
 				
-				'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
-				StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДДСКод1С
-				StoredProc.ParamByName("PROPERTY").value="ДДСКод1С"
+				'Р—РђРџРРЁР•Рњ Р”РђРќРќР«Р• Р’ РЎР’РћР™РЎРўР’Рђ Р”РћРљРЈРњР•РќРўРђ
+				StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Р”Р”РЎРљРѕРґ1РЎ
+				StoredProc.ParamByName("PROPERTY").value="Р”Р”РЎРљРѕРґ1РЎ"
 				StoredProc.ParamByName("UNITCODE").value="BankDocuments"
 				StoredProc.ParamByName("RN_SOTR").value=newRN
-				StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+				StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)
 				StoredProc.ParamByName("NUM_VAL").value=NULL
 				StoredProc.ExecProc
 			else
-				MyFile.Write("INFO "&now()&vbTab&" В Парус найден документ списания ДС с кодом "&trim(nodeNode.selectSingleNode("Ссылка").text)&"  "&nodeNode.selectSingleNode("ВхНомер").text&" "&nodeNode.selectSingleNode("ВхДата").text&" - пропускаю документ."&vbNewLine)
+				MyFile.Write("INFO "&now()&vbTab&" Р’ РџР°СЂСѓСЃ РЅР°Р№РґРµРЅ РґРѕРєСѓРјРµРЅС‚ СЃРїРёСЃР°РЅРёСЏ Р”РЎ СЃ РєРѕРґРѕРј "&trim(nodeNode.selectSingleNode("РЎСЃС‹Р»РєР°").text)&"  "&nodeNode.selectSingleNode("Р’С…РќРѕРјРµСЂ").text&" "&nodeNode.selectSingleNode("Р’С…Р”Р°С‚Р°").text&" - РїСЂРѕРїСѓСЃРєР°СЋ РґРѕРєСѓРјРµРЅС‚."&vbNewLine)
 			End if
 			Query.Close
 		next
-		MyFile.Write("INFO "&now()&vbTab&" Документы поступления на расчетные счета загружены.  Всего обработано: "& object_counter & vbNewLine)
+		MyFile.Write("INFO "&now()&vbTab&" Р”РѕРєСѓРјРµРЅС‚С‹ РїРѕСЃС‚СѓРїР»РµРЅРёСЏ РЅР° СЂР°СЃС‡РµС‚РЅС‹Рµ СЃС‡РµС‚Р° Р·Р°РіСЂСѓР¶РµРЅС‹.  Р’СЃРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРѕ: "& object_counter & vbNewLine)
 	end if
 	
-	'ГОТОВИМ ФАЙЛ ОТВЕТА
+	'Р“РћРўРћР’РРњ Р¤РђР™Р› РћРўР’Р•РўРђ
 	Set oldReply = CreateObject("Msxml2.DOMDocument")
 	oldReply.async = False
 	oldReply.load "\\10.130.32.52\Tatneft\Mess_20100_UH.xml"
-	' Проверяем на ошибки загрузки
+	' РџСЂРѕРІРµСЂСЏРµРј РЅР° РѕС€РёР±РєРё Р·Р°РіСЂСѓР·РєРё
 	If oldReply.parseError.errorCode Then
 			MsgBox oldReply.parseError.Reason
 	End If
 	If not oldReply.parseError.errorCode = -2146697210 then
-		oldReplyNumber = cInt(oldReply.selectSingleNode("/Данные/НомерОтправленногоСообщения").text)+1
+		oldReplyNumber = cInt(oldReply.selectSingleNode("/Р”Р°РЅРЅС‹Рµ/РќРѕРјРµСЂРћС‚РїСЂР°РІР»РµРЅРЅРѕРіРѕРЎРѕРѕР±С‰РµРЅРёСЏ").text)+1
 	else
 		oldReplyNumber = 1
 	End if
 	Set newReply = CreateObject("Msxml2.DOMDocument")
 	newReply.appendChild(newReply.createProcessingInstruction("xml", "version='1.0' encoding='utf-8'"))
-	Set rootNode = newReply.appendChild( newReply.createElement("Данные") )
+	Set rootNode = newReply.appendChild( newReply.createElement("Р”Р°РЅРЅС‹Рµ") )
 	rootNode.setAttribute "xmlns", "http://localhost/ExchangeUH_FileResponse"
 	rootNode.setAttribute "xmlns:xs", "http://www.w3.org/2001/XMLSchema"
 	rootNode.setAttribute "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"
-	Set subNode = rootNode.appendChild(newReply.createElement("НомерОтправленногоСообщения"))
+	Set subNode = rootNode.appendChild(newReply.createElement("РќРѕРјРµСЂРћС‚РїСЂР°РІР»РµРЅРЅРѕРіРѕРЎРѕРѕР±С‰РµРЅРёСЏ"))
 	subNode.text = oldReplyNumber
-	Set subNode = rootNode.appendChild(newReply.createElement("НомерПринятогоСообщения"))
-	subNode.text = xmlParser.selectSingleNode("//НомерОтправленногоСообщения").text
+	Set subNode = rootNode.appendChild(newReply.createElement("РќРѕРјРµСЂРџСЂРёРЅСЏС‚РѕРіРѕРЎРѕРѕР±С‰РµРЅРёСЏ"))
+	subNode.text = xmlParser.selectSingleNode("//РќРѕРјРµСЂРћС‚РїСЂР°РІР»РµРЅРЅРѕРіРѕРЎРѕРѕР±С‰РµРЅРёСЏ").text
 	newReply.save("\\10.130.32.52\Tatneft\Mess_20100_UH.xml")
 	newReply.save("\\10.130.32.52\Tatneft\Exch_logs\Mess_20100_UH.xml")
 	
-	'ИМПОРТ ЗАВЕРШЕН
-	MyFile.Write(vbTab&now()&vbTab&" Импорт данных из 1С:УХ в ИСУ Парус успешно завершен."&vbNewLine)
-	MsgBox "Импорт данных завершен"&vbNewLine&"Подробности в журнале 1C-Parus_exchange.log"
+	'РРњРџРћР Рў Р—РђР’Р•Р РЁР•Рќ
+	MyFile.Write(vbTab&now()&vbTab&" РРјРїРѕСЂС‚ РґР°РЅРЅС‹С… РёР· 1РЎ:РЈРҐ РІ РРЎРЈ РџР°СЂСѓСЃ СѓСЃРїРµС€РЅРѕ Р·Р°РІРµСЂС€РµРЅ."&vbNewLine)
+	MsgBox "РРјРїРѕСЂС‚ РґР°РЅРЅС‹С… Р·Р°РІРµСЂС€РµРЅ"&vbNewLine&"РџРѕРґСЂРѕР±РЅРѕСЃС‚Рё РІ Р¶СѓСЂРЅР°Р»Рµ 1C-Parus_exchange.log"
 end sub
 
 Function ShowError(XMLDOMParseError)
@@ -1719,11 +1719,11 @@ End Function
 
 Function GetFaceAccCat(subdiv)
 	Select Case subdiv
-		Case "НкТЭЦ.01"
+		Case "РќРєРўР­Р¦.01"
 			CatRN = 4471103 
-		Case "НкТЭЦ.02"
-		Case "НкТЭЦ.03"
-		Case "НкТЭЦ.04"
+		Case "РќРєРўР­Р¦.02"
+		Case "РќРєРўР­Р¦.03"
+		Case "РќРєРўР­Р¦.04"
 		Case else
 	End Select
 	Query.SQL.Text="select NAME from ACATALOG where RN='"&CatRN&"'"
