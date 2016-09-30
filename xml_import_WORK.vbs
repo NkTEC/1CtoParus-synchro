@@ -954,7 +954,7 @@ sub xml_import
 					Query.Close
 					
 					If nodeNode.selectSingleNode("СрокДействияПо").text="0001-01-01" then
-						endDate = "01.01.0001"	'NULL
+						endDate = "00.00.0000"	'NULL
 					Else
 						endDate = ConvDate(nodeNode.selectSingleNode("СрокДействияПо").text)
 					end if
