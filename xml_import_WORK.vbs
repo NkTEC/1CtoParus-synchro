@@ -929,7 +929,7 @@ sub xml_import
 						executive = "0001 ГАТИНА Г.И."		'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СТРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
 						subdiv = "НкТЭЦ.13.15"
 					else
-						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 order by RN DESC"	'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
+						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 and DISMISS_DATE is NULL order by RN DESC"	'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
 						Query.Open
 						executive		= Query.FieldByname("AGNABBR").value				
 						Query.SQL.Text = "select RN from CLNPERSONS where PERS_AGENT='"&Query.FieldByname("RN").value&"'"
