@@ -60,17 +60,32 @@ sub xml_import
 				' ВДРУГ У НАС УЖЕ ЕСТЬ КОНТРАГЕНТ С ТАКИМ ЖЕ ИНН/КПП НО БЕЗ КОДА SAP
 				If KPP="" then
 					CaQuery=Query
-					CaQuery.Sql.Text = "select AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"'"
+					CaQuery.Sql.Text = "select RN, AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"'"
 					CaQuery.Open
 				else
 					CaQuery=Query
-					CaQuery.Sql.Text = "select AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"' and REASON_CODE='"&KPP&"'"
+					CaQuery.Sql.Text = "select RN, AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"' and REASON_CODE='"&KPP&"'"
 					CaQuery.Open
 				end if
-
+				
 				If CaQuery.IsEmpty then
-					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - создаю нового контрагента."&vbNewLine)
-					
+					T_New_agn = True
+				else
+					agn_name = CaQuery.FieldByname("AGNNAME").value
+					Query.SQL.Text="select STR_VALUE from docs_props_vals where UNIT_RN="&CaQuery.FieldByname("RN").value&" and docs_prop_rn='105510718' and unitcode='AGNLIST'"
+					Query.Open
+					If Query.IsEmpty then
+						' ИНН/КПП СОВПАДАЕТ, А КОД SAP НЕ ЗАПОЛНЕН - СТАВИМ ТРИГГЕР ДЛЯ ОСТАНОВА В КОНЦЕ БЛОКА ЗАГРУЗКИ КОНТРАГЕНТОВ
+						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В таблице найден контрагент с такими же ИНН/КПП, но без кода SAP "&SAPcode&" - контрагент не создан, необходимо проверить вручную: "&INN&"/"&KPP&" ("&agn_name&")"&vbNewLine)
+						T_Agn_error = True
+						T_New_agn = False
+					else
+						MyFile.Write(vbTab&"INFO "&now()&vbTab&" При попытке загрузить контрагента (код SAP "&SAPcode&") найден контрагент с такими же ИНН/КПП, но c другим кодом SAP "&Query.FieldByname("STR_VALUE").value&" - контрагент создан, но необходимо проверить его вручную: "&INN&"/"&KPP&" ("&agn_name&")"&vbNewLine)
+						T_New_agn = True
+					end if
+				end if
+				
+				If T_New_agn then
 					'ДОБАВИМ ЗАПИСЬ О НОВОМ КОНТРАГЕНТЕ
 					StoredProc.StoredProcName="P_AGNLIST_INSERT"
 					StoredProc.ParamByName("nCOMPANY").value=42903                                        'код подразделения
@@ -115,12 +130,9 @@ sub xml_import
 					StoredProc.ParamByName("ST_VAL").value=nodeNode.selectSingleNode("АдресПочтовый").text
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
-				else
-					' ИНН/КПП СОВПАДАЕТ, А КОДА SAP НЕТ - НЕ ПОРЯДОК
-					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В таблице найден контрагент с такими же ИНН/КПП, но без кода SAP "&SAPcode&" - контрагент не создан, необходимо проверить вручную: "&INN&"/"&KPP&" ("&CaQuery.FieldByname("AGNNAME").value&")"&vbNewLine)
-					T_Agn_error = True
+					
+					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - создаю нового контрагента."&vbNewLine)
 				end If
-				CaQuery.Close
 			else        'найдена запись с нашим кодом SAP
 
 				' НАЙДЕМ КОНТРАГЕНТА В ТАБЛИЦЕ ПО RN
@@ -954,7 +966,7 @@ sub xml_import
 					Query.Close
 					
 					If nodeNode.selectSingleNode("СрокДействияПо").text="0001-01-01" then
-						endDate = "00.00.0000"	'NULL
+						endDate = "01.01.0001"	'NULL
 					Else
 						endDate = ConvDate(nodeNode.selectSingleNode("СрокДействияПо").text)
 					end if
