@@ -1142,7 +1142,7 @@ sub xml_import
 									StoredProc.ParamByName("SFACEACCCRN").value		= "test" 'GetFaceAccCat(subdiv)'связать по подразделению
 									StoredProc.ParamByName("SAGENT").value			= agn_abbr
 									StoredProc.ParamByName("SFACEACC").value		= doc_pref&"/"&doc_numb&"/"&snumb
-									StoredProc.ParamByName("NACC_KIND").value		= 0
+									StoredProc.ParamByName("NACC_KIND").value		= acc_kind
 									StoredProc.ParamByName("SEXECUTIVE").value		= executive
 									StoredProc.ParamByName("SCURRENCY").value		= scurrency
 									StoredProc.ParamByName("NCREDIT_SUM").value		= 0
