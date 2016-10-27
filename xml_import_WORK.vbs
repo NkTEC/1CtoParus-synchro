@@ -33,6 +33,7 @@ sub xml_import
 			DoubledAgentsString	= NULL
 			SAPcode				= NULL
 			newRN				= NULL
+			AGNABBR				= NULL
 			
 			object_counter=object_counter+1
 			
@@ -60,32 +61,35 @@ sub xml_import
 				' ВДРУГ У НАС УЖЕ ЕСТЬ КОНТРАГЕНТ С ТАКИМ ЖЕ ИНН/КПП НО БЕЗ КОДА SAP
 				If KPP="" then
 					CaQuery=Query
-					CaQuery.Sql.Text = "select RN, AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"'"
+					CaQuery.Sql.Text = "select AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"'"
 					CaQuery.Open
 				else
 					CaQuery=Query
-					CaQuery.Sql.Text = "select RN, AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"' and REASON_CODE='"&KPP&"'"
+					CaQuery.Sql.Text = "select AGNNAME, AGNIDNUMB, REASON_CODE from AGNLIST where AGNIDNUMB='"&INN&"' and REASON_CODE='"&KPP&"'"
 					CaQuery.Open
 				end if
 				
 				If CaQuery.IsEmpty then
 					T_New_agn = True
+					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден контрагент с кодом SAP "&SAPcode&" или с парой ИНН/КПП "&INN&"/"&KPP&" ("&nodeNode.selectSingleNode("Наименование").text&") - создаю нового контрагента."&vbNewLine)
 				else
 					agn_name = CaQuery.FieldByname("AGNNAME").value
-					Query.SQL.Text="select STR_VALUE from docs_props_vals where UNIT_RN="&CaQuery.FieldByname("RN").value&" and docs_prop_rn='105510718' and unitcode='AGNLIST'"
-					Query.Open
-					If Query.IsEmpty then
-						' ИНН/КПП СОВПАДАЕТ, А КОД SAP НЕ ЗАПОЛНЕН - СТАВИМ ТРИГГЕР ДЛЯ ОСТАНОВА В КОНЦЕ БЛОКА ЗАГРУЗКИ КОНТРАГЕНТОВ
-						MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В таблице найден контрагент с такими же ИНН/КПП, но без кода SAP "&SAPcode&" - контрагент не создан, необходимо проверить вручную: "&INN&"/"&KPP&" ("&agn_name&")"&vbNewLine)
-						T_Agn_error = True
-						T_New_agn = False
-					else
-						MyFile.Write(vbTab&"INFO "&now()&vbTab&" При попытке загрузить контрагента (код SAP "&SAPcode&") найден контрагент с такими же ИНН/КПП, но c другим кодом SAP "&Query.FieldByname("STR_VALUE").value&" - контрагент создан, но необходимо проверить его вручную: "&INN&"/"&KPP&" ("&agn_name&")"&vbNewLine)
-						T_New_agn = True
-					end if
+					' ИНН/КПП СОВПАДАЕТ, А КОД SAP НЕ ЗАПОЛНЕН - СТАВИМ ТРИГГЕР ДЛЯ ОСТАНОВА В КОНЦЕ БЛОКА ЗАГРУЗКИ КОНТРАГЕНТОВ
+					MyFile.Write(vbTab&"ERROR "&now()&vbTab&" В таблице найден контрагент с такими же ИНН/КПП, но без кода SAP "&SAPcode&" (либо с другим кодом SAP) - контрагент не создан, необходимо проверить вручную: "&INN&"/"&KPP&" ("&agn_name&")"&vbNewLine)
+					T_Agn_error = True
+					T_New_agn = False
 				end if
 				
 				If T_New_agn then
+					
+					AGNABBR = INN&divider&KPP
+					REM Query.SQL.Text="select AGNABBR, STR_VALUE from AGNLIST a, DOCS_PROPS_VALS b where a.AGNABBR='"&AGNABBR&"' and a.RN=b.UNIT_RN and DOCS_PROP_RN=105510718 and not STR_VALUE='"&SAPcode&"'"
+					REM Query.Open
+					REM If not Query.IsEmpty then	'это дубль, во избежание ошибок нарушения уникальности сохраним в качестве мнемокода код SAP
+						REM MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с мнемокодом "&AGNABBR&", но другим кодом SAP "&Query.FieldByname("STR_VALUE")&" ("&nodeNode.selectSingleNode("Наименование").text&") - в качестве мнемокода будет указан код SAP "&SAPcode&"."&vbNewLine)
+						REM AGNABBR=SAPcode
+					REM end if
+					
 					'ДОБАВИМ ЗАПИСЬ О НОВОМ КОНТРАГЕНТЕ
 					StoredProc.StoredProcName="P_AGNLIST_INSERT"
 					StoredProc.ParamByName("nCOMPANY").value=42903                                        'код подразделения
@@ -97,7 +101,7 @@ sub xml_import
 					StoredProc.ParamByName("sREASON_CODE").value=nodeNode.selectSingleNode("КПП").text
 					StoredProc.ParamByName("sOGRN").value=nodeNode.selectSingleNode("ОГРН").text
 					StoredProc.ParamByName("ORGCODE").value=nodeNode.selectSingleNode("ОКПО").text
-					StoredProc.ParamByName("AGNABBR").value=INN&divider&KPP
+					StoredProc.ParamByName("AGNABBR").value=AGNABBR
 					StoredProc.ParamByName("PHONE").value=nodeNode.selectSingleNode("Телефон").text
 					StoredProc.ParamByName("EMP").value=0
 					StoredProc.ParamByName("nSEX").value=0
@@ -130,8 +134,6 @@ sub xml_import
 					StoredProc.ParamByName("ST_VAL").value=nodeNode.selectSingleNode("АдресПочтовый").text
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
-					
-					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - создаю нового контрагента."&vbNewLine)
 				end If
 			else        'найдена запись с нашим кодом SAP
 
@@ -273,6 +275,14 @@ sub xml_import
 					end if					
 					If OKTMO = 0 then
 						OKTMO = NULL
+					end if
+					
+					AGNABBR = nodeNode.selectSingleNode("ИНН").text&divider&nodeNode.selectSingleNode("КПП").text
+					Query.SQL.Text="select AGNABBR, STR_VALUE from AGNLIST a, DOCS_PROPS_VALS b where a.AGNABBR='"&AGNABBR&"' and a.RN=b.UNIT_RN and DOCS_PROP_RN=105510718 and not STR_VALUE='"&SAPcode&"'"
+					Query.Open
+					If not Query.IsEmpty then	'это дубль, во избежание ошибок нарушения уникальности сохраним в качестве мнемокода код SAP
+						MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с мнемокодом "&AGNABBR&", но другим кодом SAP "&Query.FieldByname("STR_VALUE")&" ("&nodeNode.selectSingleNode("Наименование").text&") - в качестве мнемокода будет указан код SAP "&SAPcode&"."&vbNewLine)
+						AGNABBR=SAPcode
 					end if
 										
 					'ОБНОВИМ ЗАПИСЬ О КОНТРАГЕНТЕ
