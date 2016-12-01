@@ -1498,7 +1498,11 @@ sub xml_import
 					If not Query.IsEmpty then
 						Query.SQL.Text="select DOC_TYPE, DOC_PREF, DOC_NUMB, DOC_DATE from CONTRACTS where RN='"&Query.FieldByname("UNIT_RN").value&"'"
 						Query.Open
-						docdate = Query.FieldByname("DOC_DATE").value
+						If docdate="01-янв-0001" then 'дата 01-янв-0001 в банковских документах не дает сформировать платежи по счетам
+							docdate = ""
+						else
+							docdate = Query.FieldByname("DOC_DATE").value
+						end if
 						docpref = LTrim(Query.FieldByname("DOC_PREF").value)
 						docnumb = LTrim(Query.FieldByname("DOC_NUMB").value)
 						delimiter = "-"
