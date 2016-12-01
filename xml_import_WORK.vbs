@@ -280,9 +280,9 @@ sub xml_import
 					AGNABBR = nodeNode.selectSingleNode("ИНН").text&divider&nodeNode.selectSingleNode("КПП").text
 					Query.SQL.Text="select AGNABBR, STR_VALUE from AGNLIST a, DOCS_PROPS_VALS b where a.AGNABBR='"&AGNABBR&"' and a.RN=b.UNIT_RN and DOCS_PROP_RN=105510718 and not STR_VALUE='"&SAPcode&"'"
 					Query.Open
-					If not Query.IsEmpty then	'это дубль, во избежание ошибок нарушения уникальности сохраним в качестве мнемокода код SAP
-						MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с мнемокодом "&AGNABBR&", но другим кодом SAP "&Query.FieldByname("STR_VALUE")&" ("&nodeNode.selectSingleNode("Наименование").text&") - в качестве мнемокода будет указан код SAP "&SAPcode&"."&vbNewLine)
-						AGNABBR=SAPcode
+					If not Query.IsEmpty then	'это дубль, во избежание ошибок нарушения уникальности изменим мнемокод
+						MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с мнемокодом "&AGNABBR&", но другим кодом SAP "&Query.FieldByname("STR_VALUE").value&" ("&nodeNode.selectSingleNode("Наименование").text&") - в качестве разделителя мнемокода будет указан символ v "&SAPcode&"."&vbNewLine)
+						divider="v"
 					end if
 										
 					'ОБНОВИМ ЗАПИСЬ О КОНТРАГЕНТЕ
