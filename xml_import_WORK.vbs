@@ -1,4 +1,3 @@
-
 sub xml_import
 	Dim contragents 'коллекцию XMLDOMNodeList всех элементов заданного типа
 	Dim cAgent 'элемент коллекции Контрагенты
@@ -605,149 +604,148 @@ sub xml_import
 					Query.SQL.Text = "select SNAME, SBANKACC, SCODE from v_AGNBANKS where SCODE='БАНК_"&nodeNode.selectSingleNode("Банк").text&"'"
 					Query.Open
 					agnbank_mnemo = Query.FieldByname("SCODE").value
+					
+					'ПОЛУЧИМ НАИМЕНОВАНИЕ КОНТРАГЕНТА ДЛЯ НАИМЕНОВАНИЯ СЧЕТА
+					Query.SQL.Text= "select AGNNAME from AGNLIST where RN='"&agnlist_rn&"'"
+					Query.Open
+					agnlist_name = Query.FieldByname("AGNNAME").value
+					Query.Close
+					
+					Query.SQL.Text="select * from v_agnacc where AGNACC='"&nodeNode.selectSingleNode("НомерСчета").text&"' and AGNRN='"&agnlist_rn&"' and SBANKCODEACC='"&agnbank_mnemo&"' order by STRCODE"		
+					Query.Open
+					Query.Last
+									
+					If Query.IsEmpty then 
+						MyFile.Write("INFO "&now()&vbTab&" В Парус не найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - создаю новый счет."&vbNewLine)
+						
+						'НАЙДЕМ ПАРАМЕТР "КОД СТРОКИ"
+						StoredProc.StoredProcName="FIND_AGNACC_LASTCODE"
+						StoredProc.ParamByName("COMPANY").value	= 42903                                        'код подразделения
+						StoredProc.ParamByName("AGNRN").value	= agnlist_rn                                        'код контрагента
+						StoredProc.ExecProc
+						lastcode = CInt(StoredProc.ParamByName("STRCODE").value)
+						lastcode=lastcode+1
+						lastcode=CStr(lastcode)
+						counter = 4-len(lastcode)
+						do while counter > 0
+								lastcode="0"&lastcode
+								counter=counter-1
+						loop
+
+						'СОЗДАЕМ ЗАПИСЬ О НОВОМ БАНКОВСКОМ СЧЕТЕ
+						StoredProc.StoredProcName="P_AGNACC_INSERT"
+						StoredProc.ParamByName("nCOMPANY").value		= 42903                                        'код подразделения
+						StoredProc.ParamByName("nPRN").value			= agnlist_rn                                        'код контрагента
+						StoredProc.ParamByName("sSTRCODE").value		= lastcode
+						StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("НомерСчета").text
+						StoredProc.ParamByName("sAGNNAMEACC").value		= agnlist_name
+						StoredProc.ParamByName("SAGNBANKS").value		= agnbank_mnemo
+						StoredProc.ParamByName("NACCESS_FLAG").value	= 1
+						StoredProc.ExecProc
+						newRN = StoredProc.ParamByName("nRN").value
+
+						REM 'ВНЕСЕМ КОД 1С В СВОЙСТВА
+						REM 'StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'процедурка для записи доп свойства
+						REM 'StoredProc.ParamByName("PROPERTY").value="СчетКод1С"
+						REM 'StoredProc.ParamByName("UNITCODE").value="ContragentsBankAttrs"
+						REM 'StoredProc.ParamByName("RN_SOTR").value=newRN
+						REM 'StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
+						REM 'StoredProc.ParamByName("NUM_VAL").value=NULL
+						REM 'StoredProc.ExecProc
+						Query.Close
+					else
+						MyFile.Write("INFO "&now()&vbTab&" В Парус найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - обновляю существующий счет."&vbNewLine)
+						
+						account_rn = Query.FieldByname("RN").value
+
+						'НАЙДЕМ НОМЕР СТРОКИ ДЛЯ ТЕКУЩЕЙ ЗАПИСИ О БАНКОВСКОМ СЧЕТЕ
+						Query.SQL.Text = "select * from AGNACC where RN = '"&account_rn&"'"
+						Query.Open
+						
+						STRCODE			= Query.FieldByname("STRCODE").value
+						BANKNAMEACC		= Query.FieldByname("BANKNAMEACC").value
+						BANKFCODEACC	= Query.FieldByname("BANKFCODEACC").value
+						BANKACC			= Query.FieldByname("BANKACC").value
+						BANKCITYACC		= Query.FieldByname("BANKCITYACC").value
+						OPEN_DATE		= Query.FieldByname("OPEN_DATE").value
+						CLOSE_DATE		= Query.FieldByname("CLOSE_DATE").value
+						COUNTRY_CODE	= Query.FieldByname("COUNTRY_CODE").value
+						SWIFT			= Query.FieldByname("SWIFT").value
+						REGION			= Query.FieldByname("REGION").value
+						DISTRICT		= Query.FieldByname("DISTRICT").value
+						BANKACC_TYPE	= Query.FieldByname("BANKACC_TYPE").value
+						sCURRENCY		= Query.FieldByname("CURRENCY").value
+						CORR_AGNACC		= Query.FieldByname("CORR_AGNACC").value
+						CARDNUMB		= Query.FieldByname("CARDNUMB").value
+						AGNTREAS		= Query.FieldByname("AGNTREAS").value
+						REAS_AGNACC		= Query.FieldByname("TREAS_AGNACC").value
+						INTERMEDIARY	= Query.FieldByname("INTERMEDIARY").value
+						INTERMED_ACC	= Query.FieldByname("INTERMED_ACC").value
+						
+						'УСТАНОВИМ В NULL ВСЕ ЗНАЧЕНИЯ 0
+						If BANKACC_TYPE = 0 then
+							BANKACC_TYPE = NULL
+						else
+							Query.SQL.Text = "select CODE from BANKACCTYPES where RN='"&BANKACC_TYPE&"'"
+							Query.Open
+							BANKACC_TYPE = Query.FieldByname("CODE").value
+						end if	
+						If sCURRENCY = 0 then
+							sCURRENCY = NULL
+						else
+							Query.SQL.Text = "select CURCODE from CURNAMES where RN='"&sCURRENCY&"'"
+							Query.Open
+							sCURRENCY = Query.FieldByname("CURCODE").value
+						end if	
+						
+						CORR_AGNACC = NULL
+						
+						If AGNTREAS = 0 then
+							AGNTREAS = NULL
+						end if	
+						If REAS_AGNACC = 0 then
+							REAS_AGNACC = NULL
+						end if	
+						If INTERMEDIARY = 0 then
+							INTERMEDIARY = NULL
+						end if	
+						If INTERMED_ACC = 0 then
+							INTERMED_ACC = NULL
+						end if	
+
+						'ОБНОВИМ ЗАПИСЬ О БАНКОВСКОМ СЧЕТЕ
+						StoredProc.StoredProcName="P_AGNACC_UPDATE"
+						StoredProc.ParamByName("nCOMPANY").value		= 42903
+						StoredProc.ParamByName("nRN").value				= account_rn
+						StoredProc.ParamByName("sSTRCODE").value		= STRCODE
+						StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("НомерСчета").text
+						StoredProc.ParamByName("sAGNNAMEACC").value		= agnlist_name
+						StoredProc.ParamByName("sBANKNAMEACC").value	= BANKNAMEACC
+						StoredProc.ParamByName("sBANKFCODEACC").value	= BANKFCODEACC
+						StoredProc.ParamByName("sBANKACC").value		= BANKACC
+						StoredProc.ParamByName("sBANKCITYACC").value	= BANKCITYACC
+						StoredProc.ParamByName("sAGNBANKS").value		= agnbank_mnemo
+						StoredProc.ParamByName("dOPEN_DATE").value		= OPEN_DATE
+						StoredProc.ParamByName("dCLOSE_DATE").value		= CLOSE_DATE
+						StoredProc.ParamByName("sCOUNTRY_CODE").value	= COUNTRY_CODE
+						StoredProc.ParamByName("nACCESS_FLAG").value	= 1
+						StoredProc.ParamByName("sSWIFT").value			= SWIFT
+						StoredProc.ParamByName("sREGION").value			= REGION
+						StoredProc.ParamByName("sDISTRICT").value		= DISTRICT
+						StoredProc.ParamByName("sBANKACC_TYPE").value	= BANKACC_TYPE
+						StoredProc.ParamByName("sCURRENCY").value		= sCURRENCY
+						StoredProc.ParamByName("sCORR_AGNACC").value	= CORR_AGNACC
+						StoredProc.ParamByName("sCARDNUMB").value		= CARDNUMB
+						StoredProc.ParamByName("sAGNTREAS").value		= AGNTREAS
+						StoredProc.ParamByName("sTREAS_AGNACC").value	= REAS_AGNACC
+						StoredProc.ParamByName("sINTERMEDIARY").value	= INTERMEDIARY
+						StoredProc.ParamByName("sINTERMED_ACC").value	= INTERMED_ACC
+						StoredProc.ExecProc
+					end if
+					
 				else
 					agnbank_mnemo = NULL
-				end if
-				
-				
-				'ПОЛУЧИМ НАИМЕНОВАНИЕ КОНТРАГЕНТА ДЛЯ НАИМЕНОВАНИЯ СЧЕТА
-				Query.SQL.Text= "select AGNNAME from AGNLIST where RN='"&agnlist_rn&"'"
-				Query.Open
-				agnlist_name = Query.FieldByname("AGNNAME").value
-				Query.Close
-				
-				Query.SQL.Text="select * from v_agnacc where AGNACC='"&nodeNode.selectSingleNode("НомерСчета").text&"' and AGNRN='"&agnlist_rn&"' and SBANKCODEACC='"&agnbank_mnemo&"' order by STRCODE"
-				Query.Open
-				Query.Last
-				
-								
-				If Query.IsEmpty then 
-					MyFile.Write("INFO "&now()&vbTab&" В Парус не найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - создаю новый счет."&vbNewLine)
-					
-					'НАЙДЕМ ПАРАМЕТР "КОД СТРОКИ"
-					StoredProc.StoredProcName="FIND_AGNACC_LASTCODE"
-					StoredProc.ParamByName("COMPANY").value	= 42903                                        'код подразделения
-					StoredProc.ParamByName("AGNRN").value	= agnlist_rn                                        'код контрагента
-					StoredProc.ExecProc
-					lastcode = CInt(StoredProc.ParamByName("STRCODE").value)
-					lastcode=lastcode+1
-					lastcode=CStr(lastcode)
-					counter = 4-len(lastcode)
-					do while counter > 0
-							lastcode="0"&lastcode
-							counter=counter-1
-					loop
-
-					'СОЗДАЕМ ЗАПИСЬ О НОВОМ БАНКОВСКОМ СЧЕТЕ
-					StoredProc.StoredProcName="P_AGNACC_INSERT"
-					StoredProc.ParamByName("nCOMPANY").value		= 42903                                        'код подразделения
-					StoredProc.ParamByName("nPRN").value			= agnlist_rn                                        'код контрагента
-					StoredProc.ParamByName("sSTRCODE").value		= lastcode
-					StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("НомерСчета").text
-					StoredProc.ParamByName("sAGNNAMEACC").value		= agnlist_name
-					StoredProc.ParamByName("SAGNBANKS").value		= agnbank_mnemo
-					StoredProc.ParamByName("NACCESS_FLAG").value	= 1
-					StoredProc.ExecProc
-					newRN = StoredProc.ParamByName("nRN").value
-
-					REM 'ВНЕСЕМ КОД 1С В СВОЙСТВА
-					REM 'StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'процедурка для записи доп свойства
-					REM 'StoredProc.ParamByName("PROPERTY").value="СчетКод1С"
-					REM 'StoredProc.ParamByName("UNITCODE").value="ContragentsBankAttrs"
-					REM 'StoredProc.ParamByName("RN_SOTR").value=newRN
-					REM 'StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
-					REM 'StoredProc.ParamByName("NUM_VAL").value=NULL
-					REM 'StoredProc.ExecProc
-					Query.Close
-				else
-					MyFile.Write("INFO "&now()&vbTab&" В Парус найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - обновляю существующий счет."&vbNewLine)
-					
-					account_rn = Query.FieldByname("RN").value
-
-					'НАЙДЕМ НОМЕР СТРОКИ ДЛЯ ТЕКУЩЕЙ ЗАПИСИ О БАНКОВСКОМ СЧЕТЕ
-					Query.SQL.Text = "select * from AGNACC where RN = '"&account_rn&"'"
-					Query.Open
-					
-					STRCODE			= Query.FieldByname("STRCODE").value
-					BANKNAMEACC		= Query.FieldByname("BANKNAMEACC").value
-					BANKFCODEACC	= Query.FieldByname("BANKFCODEACC").value
-					BANKACC			= Query.FieldByname("BANKACC").value
-					BANKCITYACC		= Query.FieldByname("BANKCITYACC").value
-					OPEN_DATE		= Query.FieldByname("OPEN_DATE").value
-					CLOSE_DATE		= Query.FieldByname("CLOSE_DATE").value
-					COUNTRY_CODE	= Query.FieldByname("COUNTRY_CODE").value
-					SWIFT			= Query.FieldByname("SWIFT").value
-					REGION			= Query.FieldByname("REGION").value
-					DISTRICT		= Query.FieldByname("DISTRICT").value
-					BANKACC_TYPE	= Query.FieldByname("BANKACC_TYPE").value
-					sCURRENCY		= Query.FieldByname("CURRENCY").value
-					CORR_AGNACC		= Query.FieldByname("CORR_AGNACC").value
-					CARDNUMB		= Query.FieldByname("CARDNUMB").value
-					AGNTREAS		= Query.FieldByname("AGNTREAS").value
-					REAS_AGNACC		= Query.FieldByname("TREAS_AGNACC").value
-					INTERMEDIARY	= Query.FieldByname("INTERMEDIARY").value
-					INTERMED_ACC	= Query.FieldByname("INTERMED_ACC").value
-					
-					'УСТАНОВИМ В NULL ВСЕ ЗНАЧЕНИЯ 0
-					If BANKACC_TYPE = 0 then
-						BANKACC_TYPE = NULL
-					else
-						Query.SQL.Text = "select CODE from BANKACCTYPES where RN='"&BANKACC_TYPE&"'"
-						Query.Open
-						BANKACC_TYPE = Query.FieldByname("CODE").value
-					end if	
-					If sCURRENCY = 0 then
-						sCURRENCY = NULL
-					else
-						Query.SQL.Text = "select CURCODE from CURNAMES where RN='"&sCURRENCY&"'"
-						Query.Open
-						sCURRENCY = Query.FieldByname("CURCODE").value
-					end if	
-					
-					CORR_AGNACC = NULL
-					
-					If AGNTREAS = 0 then
-						AGNTREAS = NULL
-					end if	
-					If REAS_AGNACC = 0 then
-						REAS_AGNACC = NULL
-					end if	
-					If INTERMEDIARY = 0 then
-						INTERMEDIARY = NULL
-					end if	
-					If INTERMED_ACC = 0 then
-						INTERMED_ACC = NULL
-					end if	
-
-					'ОБНОВИМ ЗАПИСЬ О БАНКОВСКОМ СЧЕТЕ
-					StoredProc.StoredProcName="P_AGNACC_UPDATE"
-					StoredProc.ParamByName("nCOMPANY").value		= 42903
-					StoredProc.ParamByName("nRN").value				= account_rn
-					StoredProc.ParamByName("sSTRCODE").value		= STRCODE
-					StoredProc.ParamByName("SAGNACC").value			= nodeNode.selectSingleNode("НомерСчета").text
-					StoredProc.ParamByName("sAGNNAMEACC").value		= agnlist_name
-					StoredProc.ParamByName("sBANKNAMEACC").value	= BANKNAMEACC
-					StoredProc.ParamByName("sBANKFCODEACC").value	= BANKFCODEACC
-					StoredProc.ParamByName("sBANKACC").value		= BANKACC
-					StoredProc.ParamByName("sBANKCITYACC").value	= BANKCITYACC
-					StoredProc.ParamByName("sAGNBANKS").value		= agnbank_mnemo
-					StoredProc.ParamByName("dOPEN_DATE").value		= OPEN_DATE
-					StoredProc.ParamByName("dCLOSE_DATE").value		= CLOSE_DATE
-					StoredProc.ParamByName("sCOUNTRY_CODE").value	= COUNTRY_CODE
-					StoredProc.ParamByName("nACCESS_FLAG").value	= 1
-					StoredProc.ParamByName("sSWIFT").value			= SWIFT
-					StoredProc.ParamByName("sREGION").value			= REGION
-					StoredProc.ParamByName("sDISTRICT").value		= DISTRICT
-					StoredProc.ParamByName("sBANKACC_TYPE").value	= BANKACC_TYPE
-					StoredProc.ParamByName("sCURRENCY").value		= sCURRENCY
-					StoredProc.ParamByName("sCORR_AGNACC").value	= CORR_AGNACC
-					StoredProc.ParamByName("sCARDNUMB").value		= CARDNUMB
-					StoredProc.ParamByName("sAGNTREAS").value		= AGNTREAS
-					StoredProc.ParamByName("sTREAS_AGNACC").value	= REAS_AGNACC
-					StoredProc.ParamByName("sINTERMEDIARY").value	= INTERMEDIARY
-					StoredProc.ParamByName("sINTERMED_ACC").value	= INTERMED_ACC
-					StoredProc.ExecProc
-				end if
+				end if					
 			else
 				If nodeNode.selectSingleNode("ЭтоСчетОрганизации").text = "true" or nodeNode.selectSingleNode("Примечание").text ="Нижнекамская ТЭЦ ООО"  then
 					MyFile.Write("INFO "&now()&vbTab&" Cчет с номером "&nodeNode.selectSingleNode("НомерСчета").text&" принадлежит ООО <Нижнекамская ТЭЦ> - пропускаю счет."&vbNewLine)
