@@ -791,6 +791,7 @@ sub xml_import
 			newContract				= NULL
 			doc_numb				= NULL
 			warning					= NULL
+			DogovorZaima			= NULL
 			
 			object_counter = object_counter+1
 			
@@ -799,6 +800,10 @@ sub xml_import
 			If Query.IsEmpty and not InStr(nodeNode.selectSingleNode("ТипДоговора").text, "депозит")=0 then
 				MyFile.Write("INFO "&now()&vbTab&" Договор "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") - депозитный, пропускаю договор."&vbNewLine)
 			else
+				If Query.IsEmpty and not InStr(nodeNode.selectSingleNode("ТипДоговора").text, "займ")=0 then
+					DogovorZaima = True
+				end if
+				
 				'НАЙДЕМ ДОГОВОР ПО ССЫЛКЕ 1С
 				Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("Ссылка").text)&"%' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - код свойства "Код 1С"
 				Query.Open 
@@ -814,7 +819,8 @@ sub xml_import
 					StoredProc.ParamByName("SDOC_TYPE").value=doc_type
 					StoredProc.ParamByName("SDOC_PREF").value=doc_pref
 					StoredProc.ExecProc
-					doc_numb		= StoredProc.ParamByName("SDOC_NUMB").value
+					doc_numb			= StoredProc.ParamByName("SDOC_NUMB").value
+					CONTRACT_NEXTNUMB	= StoredProc.ParamByName("SDOC_NUMB").value
 
 					'ЕСЛИ КОММЕНТАРИЙ ЗАПОЛНЕН - ПОПРОБУЕМ ВЫТАЩИТЬ ИЗ НЕГО ДАННЫЕ ПО РАНЕЕ ЗАГРУЖЕННОМУ ДОГОВОРУ
 					comment = nodeNode.selectSingleNode("Комментарий").text
@@ -834,18 +840,22 @@ sub xml_import
 								Query.Open
 								doc_type_RN	= Query.FieldByname("RN").value
 								Query.Close
-								
-								
+																
 								'НАЙДЕМ ДОГОВОР ПО ТИПУ, ПРЕФИКСУ И НОМЕРУ
-								Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '%"&doc_numb&"'"
-								Query.Open
-								If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
-									newContract = False
-									old_RN = Query.FieldByname("RN").value		'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
+								If not doc_numb="" then
+									Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '"&doc_numb&"'"
+									Query.Open
+									If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
+										newContract = False
+										old_RN = Query.FieldByname("RN").value		'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
+									else
+										newContract = True
+									end if
+									Query.Close
 								else
+									doc_numb = CONTRACT_NEXTNUMB
 									newContract = True
-								end if
-								Query.Close
+								end if						
 							else
 								newContract = True
 							end if
@@ -946,8 +956,11 @@ sub xml_import
 									
 					'ПОЛУЧИМ КОД ПОДРАЗДЕЛЕНИЯ ПО ЦЕПОЧКЕ: "ФИО ИСПОЛНИТЕЛЯ -> УИН КОНТРАГЕНТА -> УИН СОТРУДНИКА -> ЗАПИСЬ О ТЕКУЩЕЙ ДОЛЖНОСТИ -> УИН ПОДРАЗДЕЛЕНИЯ -> КОД ПОДРАЗДЕЛЕНИЯ"
 					if nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Гатина Гузель Илдаровна" then
-						executive = "0001 ГАТИНА Г.И."		'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СТРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
+						executive = "0001 ГАТИНА Г.И."		'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
 						subdiv = "НкТЭЦ.13.15"
+					elseIf DogovorZaima then
+						executive = "6062 ТУХВАТУЛЛИНА"		'ТУХВАТУЛЛИНА М.Ф. ведет договора займов, НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "финансовый отдел"
+						subdiv = "НкТЭЦ.13.18"
 					else
 						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 and DISMISS_DATE is NULL order by RN DESC"	'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
 						Query.Open
@@ -1179,6 +1192,7 @@ sub xml_import
 					end if
 				else
 					MyFile.Write("INFO "&now()&vbTab&" В Парус найден договор "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") - пропускаю договор."&vbNewLine)
+					Wscript.Echo
 					'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
 					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДогКод1С
 					StoredProc.ParamByName("PROPERTY").value="ДогКод1С"
