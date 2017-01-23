@@ -1,4 +1,4 @@
-sub xml_import
+﻿sub xml_import
 	Dim contragents 'коллекцию XMLDOMNodeList всех элементов заданного типа
 	Dim cAgent 'элемент коллекции Контрагенты
 	Dim agncounter
@@ -33,6 +33,7 @@ sub xml_import
 			SAPcode				= NULL
 			newRN				= NULL
 			AGNABBR				= NULL
+			divider				= NULL
 			
 			object_counter=object_counter+1
 			
