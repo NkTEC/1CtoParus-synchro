@@ -48,9 +48,9 @@
 			end if
 
 			If nodeNode.selectSingleNode("ЮридическоеФизическоеЛицо").text = "ЮридическоеЛицо" Then
-					agntype=0
+				agntype=0
 			Else
-					agntype=1
+				agntype=1
 			end If
 
 			' НАЙДЕМ RN КОНТРАГЕНТА ПО КОДУ SAP В ТАБЛИЦЕ СВОЙСТВ ОБЪЕКТОВ
@@ -844,7 +844,7 @@
 																
 								'НАЙДЕМ ДОГОВОР ПО ТИПУ, ПРЕФИКСУ И НОМЕРУ
 								If not doc_numb="" then
-									Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '"&doc_numb&"'"
+									Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '%"&doc_numb&"'"
 									Query.Open
 									If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
 										newContract = False
