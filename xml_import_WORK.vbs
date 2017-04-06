@@ -843,7 +843,7 @@
 								Query.Close
 																
 								'НАЙДЕМ ДОГОВОР ПО ТИПУ, ПРЕФИКСУ И НОМЕРУ
-								If not doc_numb="" then
+								If not doc_numb="" and not doc_type_RN=0 then
 									Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '%"&doc_numb&"'"
 									Query.Open
 									If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
@@ -854,6 +854,7 @@
 									end if
 									Query.Close
 								else
+									doc_type		= "0000"
 									doc_numb = CONTRACT_NEXTNUMB
 									newContract = True
 								end if						
@@ -1193,7 +1194,6 @@
 					end if
 				else
 					MyFile.Write("INFO "&now()&vbTab&" В Парус найден договор "&comment&" ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") - пропускаю договор."&vbNewLine)
-					Wscript.Echo
 					'ЗАПИШЕМ ДАННЫЕ В СВОЙСТВА ДОКУМЕНТА
 					StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ДогКод1С
 					StoredProc.ParamByName("PROPERTY").value="ДогКод1С"
