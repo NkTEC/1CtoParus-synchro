@@ -769,30 +769,30 @@
 	If Contracts.length > 0 then
 		object_counter = 0
 		For Each nodeNode In Contracts
-			comment                                        = NULL
-			comment_array                        = NULL
-			contract_complex_number        = NULL
-			contract_number_array        = NULL
-			doc_type_RN                                = NULL
-			old_RN                                        = NULL
-			agn_abbr                                = NULL
-			agn_rn                                        = NULL
-			orgaccbik                                = NULL
-			orgacc                                        = NULL
-			jur_strcode                                = NULL
-			agnaccbik                                = NULL
-			agnacc                                        = NULL
-			agn_strcode                                = NULL
-			INOUT_SIGN                                = NULL
-			ext_agreement                        = 0
-			PRN                                                = NULL
-			executive                                = NULL
-			subdiv                                        = NULL
-			scurrency                                = NULL
-			newContract                                = NULL
-			doc_numb                                = NULL
-			warning                                        = NULL
-			DogovorZaima                        = NULL
+			comment             	= NULL
+			comment_array          	= NULL
+			contract_complex_number	= NULL
+			contract_number_array  	= NULL
+			doc_type_RN				= NULL
+			old_RN                 	= NULL
+			agn_abbr              	= NULL
+			agn_rn                	= NULL
+			orgaccbik           	= NULL
+			orgacc                	= NULL
+			jur_strcode          	= NULL
+			agnaccbik             	= NULL
+			agnacc                 	= NULL
+			agn_strcode          	= NULL
+			INOUT_SIGN              = NULL
+			ext_agreement      		= 0
+			PRN        				= NULL
+			executive           	= NULL
+			subdiv               	= NULL
+			scurrency        		= NULL
+			newContract     		= NULL
+			doc_numb         		= NULL
+			warning            		= NULL
+			DogovorZaima       		= NULL
 
 			object_counter = object_counter+1
 
@@ -809,6 +809,7 @@
 				Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value like '%"&trim(nodeNode.selectSingleNode("Ссылка").text)&"%' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - код свойства "Код 1С"
 				Query.Open
 				If Query.IsEmpty then
+'''''''''''''''''''''УДАЛИТЬ БЛОК ПРИСВОЕНИЯ НОМЕРА ПО КОММЕНТАРИЮ, С 01.01.2018 ДЕЙСТВУЕТ АВТОМАТИЧЕСКАЯ НУМЕРАЦИЯ
 					'ПОДГОТОВИМ ЗАГЛУШКИ НА СЛУЧАЙ, ЕСЛИ НЕ УДАСТСЯ РАЗОБРАТЬ КОММЕНТАРИЙ
 					doc_type                = "0000"
 					doc_pref                = date&"/"&timer
@@ -823,10 +824,10 @@
 					doc_numb                        = StoredProc.ParamByName("SDOC_NUMB").value
 					CONTRACT_NEXTNUMB        = StoredProc.ParamByName("SDOC_NUMB").value
 
-					'ЕСЛИ КОММЕНТАРИЙ ЗАПОЛНЕН - ПОПРОБУЕМ ВЫТАЩИТЬ ИЗ НЕГО ДАННЫЕ ПО РАНЕЕ ЗАГРУЖЕННОМУ ДОГОВОРУ
+					'ЕСЛИ КОММЕНТАРИЙ ЗАПОЛНЕН - ПОПРОБУЕМ ВЫТАЩИТЬ ИЗ НЕГО ДАННЫЕ ПО РАНЕЕ ЗАГРУЖЕННОМУ ДОГОВОРУ					
 					comment = nodeNode.selectSingleNode("Комментарий").text
 					If not len(comment)=0 then
-						'РАСПИЛИМ КОММЕНТАРИЙ НА СОСТАВНЫЕ ЧАСТИ: ТИП, ПРЕФИКС И НОМЕР, ПРОВЕРЯЯ КОЛИЧЕСТВО СОСТАВНЫХ ЧАСТЕЙ
+						'РАСПИЛИМ КОММЕНТАРИЙ НА СОСТАВНЫЕ ЧАСТИ: ТИП, ПРЕФИКС И НОМЕР, ПРОВЕРЯЯ КОЛИЧЕСТВО СОСТАВНЫХ ЧАСТЕЙ						
 						comment_array                        = Split(LTrim(comment), ",")
 						if UBound(comment_array)>0 then
 							contract_complex_number        = RTrim(LTrim(comment_array(1)))
@@ -866,6 +867,8 @@
 					else
 						newContract = True
 					end If
+''''''''''''''''''''УДАЛИТЬ БЛОК ПРИСВОЕНИЯ НОМЕРА ПО КОММЕНТАРИЮ, С 01.01.2018 ДЕЙСТВУЕТ АВТОМАТИЧЕСКАЯ НУМЕРАЦИЯ					
+''''''''''''''''''''newContract = True
 				else
 					newContract = False
 					old_RN = Query.FieldByname("UNIT_RN").value                'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
@@ -975,7 +978,7 @@
 						subdiv = Query.FieldByname("CODE").value
 						Query.Close
 					end if
-
+										
 					'ПОЛУЧИМ НАИМЕНОВАНИЕ ВАЛЮТЫ ПО ЕЕ КОДУ
 					Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("ВалютаВзаиморасчетов").text&"'"
 					Query.Open
@@ -1011,38 +1014,73 @@
 
 						'ОПРЕДЕЛИМ - ДОПСОГЛАШЕНИЕ ИЛИ НОВЫЙ ДОГОВОР
 						if nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0 then
+							'СФОРМИРУЕМ НОМЕР ДОГОВОРА
+							'номер договора
+							doc_date_array = Split(Trim(nodeNode.selectSingleNode("СрокДействияС").text), "-")
+							doc_date_year = doc_date_array(0)
+							If not CInt(doc_date_year) < 2018 then
+								Query.SQL.Text = "select rn, doc_pref, doc_numb from contracts where begin_date between '01-янв-"&doc_date_year&"' and '31-дек-"&doc_date_year&"' and not status=0 order by doc_numb desc"
+								Query.Open
+								If not Query.IsEmpty then
+									do while not Query.EOF
+										If not IsNumeric(Query.FieldByname("doc_numb").value) then
+											Query.next
+										else
+											doc_numb_last = CInt(Query.FieldByname("doc_numb").value)
+											Query.last
+										end if
+									loop
+								end if					
+								doc_numb_last = doc_numb_last+1
+								doc_numb_last=CStr(doc_numb_last)
+								counter = 4-len(doc_numb_last)
+								do while counter > 0
+									doc_numb_last="0"&doc_numb_last
+									counter=counter-1
+								loop
+								doc_numb = doc_numb_last
+								'префикс договора
+								doc_pref = doc_date_year&"/"&GetContractSubdivPref(subdiv)	
+								note = note & ", тест автонумерации договоров: " & doc_pref &", "& doc_numb
+								REM Wscript.echo
+								REM MsgBox subdiv&", "&executive
+								REM MsgBox doc_pref&", "&doc_numb
+							else
+								note = note & ", тест автонумерации договоров: номера не присваиваются договорам младше 2018 года"
+							end if
+						
 							'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОГОВОРЕ
 							StoredProc.StoredProcName="P_CONTRACTS_INSERT"
-							StoredProc.ParamByName("nCOMPANY").value                = 42903
-							StoredProc.ParamByName("nCRN").value                        = 104583519                                        'код каталога
-							StoredProc.ParamByName("nPRN").value                        = PRN                                        'код основного договора
-							StoredProc.ParamByName("SJUR_PERS").value                = "НК ТЭЦ"
-							StoredProc.ParamByName("SJUR_ACC").value                = jur_strcode
-							StoredProc.ParamByName("SDOC_TYPE").value                = doc_type
-							StoredProc.ParamByName("SDOC_PREF").value                = doc_pref
-							StoredProc.ParamByName("SDOC_NUMB").value                = doc_numb
-							StoredProc.ParamByName("DDOC_DATE").value                = ConvDate(nodeNode.selectSingleNode("Дата").text)
-							StoredProc.ParamByName("SEXT_NUMBER").value                = nodeNode.selectSingleNode("ВнешРегНомер").text
-							StoredProc.ParamByName("NINOUT_SIGN").value                = INOUT_SIGN        'булево Входящий, Истина=0, Ложь=1
-							StoredProc.ParamByName("NFALSE_DOC").value                = 0                                'булево Условный, Ложь=0, Истина=1
-							StoredProc.ParamByName("NEXT_AGREEMENT").value        = ext_agreement        'булево Допсоглашение, Ложь=0, Истина=1
-							StoredProc.ParamByName("SAGENT").value                        = agn_abbr
-							StoredProc.ParamByName("SAGNACC").value                        = agn_strcode
-							StoredProc.ParamByName("SEXECUTIVE").value                = executive
-							StoredProc.ParamByName("SSUBDIVISION").value        = subdiv
-							StoredProc.ParamByName("DBEGIN_DATE").value                = ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)
-							StoredProc.ParamByName("DEND_DATE").value                = endDate
-							StoredProc.ParamByName("NSUM_TYPE").value                = 1
-							StoredProc.ParamByName("NDOC_SUM").value                = 0
-							StoredProc.ParamByName("NDOC_SUMTAX").value                = Replace(nodeNode.selectSingleNode("СуммаДоговора").text, ".", ",")
-							StoredProc.ParamByName("NDOC_SUM_NDS").value        = 0
-							StoredProc.ParamByName("NAUTOCALC_SIGN").value        = 1
-							StoredProc.ParamByName("SCURRENCY").value                = scurrency
-							StoredProc.ParamByName("NCURCOURS").value                = 1
-							StoredProc.ParamByName("NCURBASE").value                = 1
-							StoredProc.ParamByName("SSUBJECT").value                = nodeNode.selectSingleNode("ПредметДоговора").text
-							StoredProc.ParamByName("SNOTE").value                        = note
-							StoredProc.ParamByName("NGOVDEFORD_EXEC").value              = 0
+							StoredProc.ParamByName("nCOMPANY").value		= 42903
+							StoredProc.ParamByName("nCRN").value			= 104583519                                        'код каталога
+							StoredProc.ParamByName("nPRN").value			= PRN                                        'код основного договора
+							StoredProc.ParamByName("SJUR_PERS").value		= "НК ТЭЦ"
+							StoredProc.ParamByName("SJUR_ACC").value		= jur_strcode
+							StoredProc.ParamByName("SDOC_TYPE").value		= doc_type
+							StoredProc.ParamByName("SDOC_PREF").value		= doc_pref
+							StoredProc.ParamByName("SDOC_NUMB").value		= doc_numb
+							StoredProc.ParamByName("DDOC_DATE").value		= ConvDate(nodeNode.selectSingleNode("Дата").text)
+							StoredProc.ParamByName("SEXT_NUMBER").value		= nodeNode.selectSingleNode("ВнешРегНомер").text
+							StoredProc.ParamByName("NINOUT_SIGN").value		= INOUT_SIGN        'булево Входящий, Истина=0, Ложь=1
+							StoredProc.ParamByName("NFALSE_DOC").value		= 0                                'булево Условный, Ложь=0, Истина=1
+							StoredProc.ParamByName("NEXT_AGREEMENT").value	= ext_agreement        'булево Допсоглашение, Ложь=0, Истина=1
+							StoredProc.ParamByName("SAGENT").value			= agn_abbr
+							StoredProc.ParamByName("SAGNACC").value			= agn_strcode
+							StoredProc.ParamByName("SEXECUTIVE").value		= executive
+							StoredProc.ParamByName("SSUBDIVISION").value	= subdiv
+							StoredProc.ParamByName("DBEGIN_DATE").value		= ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)
+							StoredProc.ParamByName("DEND_DATE").value		= endDate
+							StoredProc.ParamByName("NSUM_TYPE").value		= 1
+							StoredProc.ParamByName("NDOC_SUM").value		= 0
+							StoredProc.ParamByName("NDOC_SUMTAX").value		= Replace(nodeNode.selectSingleNode("СуммаДоговора").text, ".", ",")
+							StoredProc.ParamByName("NDOC_SUM_NDS").value	= 0
+							StoredProc.ParamByName("NAUTOCALC_SIGN").value	= 1
+							StoredProc.ParamByName("SCURRENCY").value		= scurrency
+							StoredProc.ParamByName("NCURCOURS").value		= 1
+							StoredProc.ParamByName("NCURBASE").value		= 1
+							StoredProc.ParamByName("SSUBJECT").value		= nodeNode.selectSingleNode("ПредметДоговора").text
+							StoredProc.ParamByName("SNOTE").value			= note
+							StoredProc.ParamByName("NGOVDEFORD_EXEC").value	= 0
 							StoredProc.ExecProc
 							newRN = StoredProc.ParamByName("nRN").value
 
@@ -1120,6 +1158,7 @@
 								next
 							end if
 						else
+							'ДОБАВИМ ЭТАП К ДОГОВОРУ
 							Query.SQL.Text="select UNIT_RN from docs_props_vals where str_value='"&nodeNode.selectSingleNode("БазовыйДоговор").text&"' and docs_prop_rn='104582667' and unitcode='Contracts'"        ' 87456099 - код свойства "Код 1С"
 							Query.Open
 							UNIT_RN = Query.FieldByname("UNIT_RN").value
@@ -1729,7 +1768,7 @@
 	Set subNode = rootNode.appendChild(newReply.createElement("НомерПринятогоСообщения"))
 	subNode.text = xmlParser.selectSingleNode("//НомерОтправленногоСообщения").text
 	newReply.save("\\10.130.32.52\Tatneft\Mess_20100_UH.xml")
-	newReply.save("\\10.130.32.52\Tatneft\Exch_logs\Mess_20100_UH.xml")
+	'newReply.save("\\10.130.32.52\Tatneft\Exch_logs\Mess_20100_UH.xml")
 
 	'ИМПОРТ ЗАВЕРШЕН
 	MyFile.Write(vbTab&now()&vbTab&" Импорт данных из 1С:УХ в ИСУ Парус успешно завершен."&vbNewLine)
@@ -1770,3 +1809,100 @@ Function GetFaceAccCat(subdiv)
 	GetFaceAccCat = "test" 'Query.FieldByname("NAME").value
 End Function
 
+Function GetContractSubdivPref(subdiv)
+	select case subdiv
+		Case "НкТЭЦ.13.08"
+		doc_pref2 = "010"
+		
+		Case "НкТЭЦ.22"
+		doc_pref2 = "090"
+		
+		Case "НкТЭЦ.13.03"
+		doc_pref2 = "101"
+		
+		Case "НкТЭЦ.13.02"
+		doc_pref2 = "102"
+		
+		Case "НкТЭЦ.13.12.02"
+		doc_pref2 = "106"
+		
+		Case "НкТЭЦ.13.05"
+		doc_pref2 = "107"
+		
+		Case "НкТЭЦ.13.18"
+		doc_pref2 = "109"
+		
+		Case "НкТЭЦ.13.06"
+		doc_pref2 = "110"
+		
+		Case "НкТЭЦ.13.07"
+		doc_pref2 = "112"
+		
+		Case "НкТЭЦ.15"
+		doc_pref2 = "113"
+		
+		Case "НкТЭЦ.13.15"
+		doc_pref2 = "115"
+		
+		Case "НкТЭЦ.13.11"
+		doc_pref2 = "118"
+		
+		Case "НкТЭЦ.13.10"
+		doc_pref2 = "119"
+		
+		Case "НкТЭЦ.08"
+		doc_pref2 = "147"
+		
+		Case "НкТЭЦ.23"
+		doc_pref2 = "161"
+		
+		Case "НкТЭЦ.13.09"
+		doc_pref2 = "237"
+		
+		Case "НкТЭЦ.13.04"
+		doc_pref2 = "248"
+		
+		Case "НкТЭЦ.13.13"
+		doc_pref2 = "251"
+		
+		Case "НкТЭЦ.14"
+		doc_pref2 = "328м"
+		
+		Case "НкТЭЦ.02"
+		doc_pref2 = "301"
+		
+		Case "НкТЭЦ.03"
+		doc_pref2 = "314"
+		
+		Case "НкТЭЦ.06"
+		doc_pref2 = "321"
+		
+		Case "НкТЭЦ.05"
+		doc_pref2 = "328"
+		
+		Case "НкТЭЦ.07"
+		doc_pref2 = "361"
+		
+		Case "НкТЭЦ.01"
+		doc_pref2 = "374"
+		
+		Case "НкТЭЦ.04"
+		doc_pref2 = "379"
+		
+		Case "НкТЭЦ.21"
+		doc_pref2 = "115м"
+		
+		Case "НкТЭЦ.20"
+		doc_pref2 = "023"
+		
+		Case "НкТЭЦ.11"
+		doc_pref2 = "398"
+		
+		Case "НкТЭЦ.19"
+		doc_pref2 = "103"
+		
+		Case "Профком"
+		doc_pref2 = "707"
+	end select
+	GetContractSubdivPref = doc_pref2
+end function
