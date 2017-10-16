@@ -625,14 +625,18 @@
 						REM StoredProc.ExecProc
 						Query.SQL.Text="select max(strcode) from AGNACC where agnrn = '"&agnlist_rn&"'"                    'новое 05.05.2017
 						Query.Open
-						lastcode = Query.FieldByname("max(strcode)").value
-						lastcode=lastcode+1
-						lastcode=CStr(lastcode)
-						counter = 4-len(lastcode)
-						do while counter > 0
-							lastcode="0"&lastcode
-							counter=counter-1
-						loop
+						If not Query.FieldByname("max(strcode)").value = "" then
+							lastcode = Query.FieldByname("max(strcode)").value
+							lastcode=lastcode+1
+							lastcode=CStr(lastcode)
+							counter = 4-len(lastcode)
+							do while counter > 0
+								lastcode="0"&lastcode
+								counter=counter-1
+							loop
+						else
+							lastcode = "0001"
+						end if
 
 						'СОЗДАЕМ ЗАПИСЬ О НОВОМ БАНКОВСКОМ СЧЕТЕ
 						StoredProc.StoredProcName="P_AGNACC_INSERT"
@@ -1041,12 +1045,12 @@
 								doc_numb = doc_numb_last
 								'префикс договора
 								doc_pref = doc_date_year&"/"&GetContractSubdivPref(subdiv)	
-								note = note & ", тест автонумерации договоров: " & doc_pref &", "& doc_numb
+								'note = note & ", тест автонумерации договоров: " & doc_pref &"-"& doc_numb
 								REM Wscript.echo
 								REM MsgBox subdiv&", "&executive
 								REM MsgBox doc_pref&", "&doc_numb
 							else
-								note = note & ", тест автонумерации договоров: номера не присваиваются договорам младше 2018 года"
+								'note = note & ", тест автонумерации договоров: номера не присваиваются договорам младше 2018 года"
 							end if
 						
 							'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОГОВОРЕ
@@ -1092,6 +1096,71 @@
 							StoredProc.ParamByName("ST_VAL").value=trim(nodeNode.selectSingleNode("Ссылка").text)
 							StoredProc.ParamByName("NUM_VAL").value=NULL
 							StoredProc.ExecProc
+							
+							'проверка в ЮГ не обязательна для ООРЭМ, всем остальным флаг инициализируем в ноль.
+							If subdiv="НкТЭЦ.13.16" then	'ООРЭМ
+								Lawyer_check = 1
+							else
+								Lawyer_check = 0
+							end if							
+							StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'ПроверенЮГ
+							StoredProc.ParamByName("PROPERTY").value="Субъект мал/ср бизн."
+							StoredProc.ParamByName("UNITCODE").value="Contracts"
+							StoredProc.ParamByName("RN_SOTR").value=newRN
+							StoredProc.ParamByName("ST_VAL").value=NULL
+							StoredProc.ParamByName("NUM_VAL").value = Lawyer_check
+							StoredProc.ExecProc
+							
+							If subdiv="НкТЭЦ.13.16" then	'ООРЭМ
+								'ЗАПИШЕМ ДАННЫЕ О ГОСЗАКУПКАХ В СВОЙСТВА ДОКУМЕНТА
+								StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Способ закупки
+								StoredProc.ParamByName("PROPERTY").value="Способ закупки"
+								StoredProc.ParamByName("UNITCODE").value="Contracts"
+								StoredProc.ParamByName("RN_SOTR").value=newRN
+								StoredProc.ParamByName("ST_VAL").value=0
+								StoredProc.ParamByName("NUM_VAL").value=NULL
+								StoredProc.ExecProc
+								
+								StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Кол-во под. зав.
+								StoredProc.ParamByName("PROPERTY").value="Кол-во под. зав."
+								StoredProc.ParamByName("UNITCODE").value="Contracts"
+								StoredProc.ParamByName("RN_SOTR").value=newRN
+								StoredProc.ParamByName("ST_VAL").value=0
+								StoredProc.ParamByName("NUM_VAL").value=NULL
+								StoredProc.ExecProc
+								
+								StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Кол-во нед. зав.
+								StoredProc.ParamByName("PROPERTY").value="Кол-во нед. зав."
+								StoredProc.ParamByName("UNITCODE").value="Contracts"
+								StoredProc.ParamByName("RN_SOTR").value=newRN
+								StoredProc.ParamByName("ST_VAL").value=0
+								StoredProc.ParamByName("NUM_VAL").value=NULL
+								StoredProc.ExecProc
+								
+								StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'нач. цена
+								StoredProc.ParamByName("PROPERTY").value="нач. цена"
+								StoredProc.ParamByName("UNITCODE").value="Contracts"
+								StoredProc.ParamByName("RN_SOTR").value=newRN
+								StoredProc.ParamByName("ST_VAL").value=0
+								StoredProc.ParamByName("NUM_VAL").value=NULL
+								StoredProc.ExecProc
+								
+								StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'номер закуп.проц.
+								StoredProc.ParamByName("PROPERTY").value="номер закуп.проц."
+								StoredProc.ParamByName("UNITCODE").value="Contracts"
+								StoredProc.ParamByName("RN_SOTR").value=newRN
+								StoredProc.ParamByName("ST_VAL").value=0
+								StoredProc.ParamByName("NUM_VAL").value=NULL
+								StoredProc.ExecProc
+								
+								StoredProc.StoredProcName="P_KOD_KONTR_1C_TO_PARUS"         'Субъект мал/ср бизн.
+								StoredProc.ParamByName("PROPERTY").value="Субъект мал/ср бизн."
+								StoredProc.ParamByName("UNITCODE").value="Contracts"
+								StoredProc.ParamByName("RN_SOTR").value=newRN
+								StoredProc.ParamByName("ST_VAL").value=NULL
+								StoredProc.ParamByName("NUM_VAL").value=0
+								StoredProc.ExecProc	
+							end if
 
 							'ДОБАВИМ ПЕРВЫЙ ЭТАП К ДОГОВОРУ
 							StoredProc.StoredProcName="P_STAGES_INSERT"
@@ -1797,16 +1866,89 @@ End Function
 
 Function GetFaceAccCat(subdiv)
 	Select Case subdiv
-		Case "НкТЭЦ.01"
-			CatRN = 4471103
-		Case "НкТЭЦ.02"
-		Case "НкТЭЦ.03"
 		Case "НкТЭЦ.04"
+		CatRN = 12446958
+		
+		Case "НкТЭЦ.08"
+		CatRN = 4470760
+		
+		Case "НкТЭЦ.11"
+		CatRN = 52315580
+		
+		Case "НкТЭЦ.13.02"
+		CatRN = 4470368
+		
+		Case "НкТЭЦ.13.02.01"
+		CatRN = 4470368
+		
+		Case "НкТЭЦ.13.02.02"
+		CatRN = 4470368
+		
+		Case "НкТЭЦ.13.04"
+		CatRN = 4471005
+		
+		Case "НкТЭЦ.13.05"
+		CatRN = 4471054
+		
+		Case "НкТЭЦ.13.05.01"
+		CatRN = 4471054
+		
+		Case "НкТЭЦ.13.06"
+		CatRN = 4470907
+		
+		Case "НкТЭЦ.13.09"
+		CatRN = 4470417
+		
+		Case "НкТЭЦ.13.10"
+		CatRN = 4470711
+		
+		Case "НкТЭЦ.13.11"
+		CatRN = 4473896
+		
+		Case "НкТЭЦ.13.12.01"
+		CatRN = 4470809
+		
+		Case "НкТЭЦ.13.15"
+		CatRN = 4470809
+		
+		Case "НкТЭЦ.13.16"
+		CatRN = 119088138
+		
+		Case "НкТЭЦ.13.18"
+		CatRN = 4470564
+		
+		Case "НкТЭЦ.15"
+		CatRN = 4470515
+		
+		Case "НкТЭЦ.17"
+		CatRN = 12436655
+		
+		Case "НкТЭЦ.19"
+		CatRN = 111665856
+		
+		Case "НкТЭЦ.20"
+		CatRN = 4473896
+		
+		Case "НкТЭЦ.21"
+		CatRN = 17555197
+		
+		Case "НкТЭЦ.23"
+		CatRN = 4472622
+		
+		Case "НкТЭЦ.24"
+		CatRN = 4470319
+		
 		Case else
+		CatRN = 44789479
 	End Select
 	Query.SQL.Text="select NAME from ACATALOG where RN='"&CatRN&"'"
 	Query.Open
-	GetFaceAccCat = "test" 'Query.FieldByname("NAME").value
+	if not Query.IsEmpty then
+		GetFaceAccCat = Query.FieldByname("NAME").value
+	else
+		GetFaceAccCat = "test"
+	end if
+	
 End Function
 
 Function GetContractSubdivPref(subdiv)
