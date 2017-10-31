@@ -1180,7 +1180,7 @@
 							StoredProc.ParamByName("SDESCRIPTION").value        = nodeNode.selectSingleNode("ПредметДоговора").text
 							StoredProc.ParamByName("SCOMMENTS").value                = nodeNode.selectSingleNode("ПредметДоговора").text
 							StoredProc.ParamByName("NFACEACC_EXIST").value        = 0
-							StoredProc.ParamByName("SFACEACCCRN").value                = "test" 'GetFaceAccCat(subdiv)'связать по подразделению
+							StoredProc.ParamByName("SFACEACCCRN").value                = GetFaceAccCat(subdiv)'связать по подразделению
 							StoredProc.ParamByName("SAGENT").value                        = agn_abbr
 							StoredProc.ParamByName("SFACEACC").value                = doc_pref&"/"&doc_numb&"/1"
 							StoredProc.ParamByName("NACC_KIND").value                = acc_kind
@@ -1270,7 +1270,7 @@
 									StoredProc.ParamByName("SDESCRIPTION").value        = nodeNode.selectSingleNode("ПредметДоговора").text
 									StoredProc.ParamByName("SCOMMENTS").value                = nodeNode.selectSingleNode("ПредметДоговора").text
 									StoredProc.ParamByName("NFACEACC_EXIST").value        = 0
-									StoredProc.ParamByName("SFACEACCCRN").value                = "test" 'GetFaceAccCat(subdiv)'связать по подразделению
+									StoredProc.ParamByName("SFACEACCCRN").value                = GetFaceAccCat(subdiv)'связать по подразделению
 									StoredProc.ParamByName("SAGENT").value                        = agn_abbr
 									StoredProc.ParamByName("SFACEACC").value                = doc_pref&"/"&doc_numb&"/"&snumb
 									StoredProc.ParamByName("NACC_KIND").value                = acc_kind
