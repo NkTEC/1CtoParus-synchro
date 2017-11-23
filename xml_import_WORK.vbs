@@ -1023,7 +1023,7 @@
 							doc_date_array = Split(Trim(nodeNode.selectSingleNode("СрокДействияС").text), "-")
 							doc_date_year = doc_date_array(0)
 							If not CInt(doc_date_year) < 2018 then
-								Query.SQL.Text = "select rn, doc_pref, doc_numb from contracts where begin_date between '01-янв-"&doc_date_year&"' and '31-дек-"&doc_date_year&"' and not status=0 order by doc_numb desc"
+								Query.SQL.Text = "select rn, doc_pref, doc_numb from contracts where begin_date between '01-янв-"&doc_date_year&"' and '31-дек-"&doc_date_year&"' order by doc_numb desc"
 								Query.Open
 								If not Query.IsEmpty then
 									do while not Query.EOF
@@ -1044,13 +1044,7 @@
 								loop
 								doc_numb = doc_numb_last
 								'префикс договора
-								doc_pref = doc_date_year&"/"&GetContractSubdivPref(subdiv)	
-								'note = note & ", тест автонумерации договоров: " & doc_pref &"-"& doc_numb
-								REM Wscript.echo
-								REM MsgBox subdiv&", "&executive
-								REM MsgBox doc_pref&", "&doc_numb
-							else
-								'note = note & ", тест автонумерации договоров: номера не присваиваются договорам младше 2018 года"
+								doc_pref = doc_date_year&"/"&GetContractSubdivPref(subdiv)
 							end if
 						
 							'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОГОВОРЕ
