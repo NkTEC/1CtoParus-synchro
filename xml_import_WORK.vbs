@@ -1034,6 +1034,8 @@
 											Query.last
 										end if
 									loop
+								else
+									MyFile.Write("	ERROR "&now()&vbTab&" Договору с GUID ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") НЕ удалось автоматически присвоить номер."&vbNewLine)
 								end if					
 								doc_numb_last = doc_numb_last+1
 								doc_numb_last=CStr(doc_numb_last)
@@ -1045,6 +1047,14 @@
 								doc_numb = doc_numb_last
 								'префикс договора
 								doc_pref = doc_date_year&"/"&GetContractSubdivPref(subdiv)
+								note = note&" ("&doc_pref&"-"&doc_numb&")" 
+								MyFile.Write("	INFO "&now()&vbTab&" Договору с GUID ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") автоматически присвоен номер: "&doc_pref&"-"&doc_numb&"."&vbNewLine)
+							end if
+							
+							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & ". Начать отладку?" & chr(13) & chr(13)
+							Desc=InputBox(sbuf, vbOKCancel)
+							If Desc = 1 then
+								Wscript.Echo
 							end if
 						
 							'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОГОВОРЕ
