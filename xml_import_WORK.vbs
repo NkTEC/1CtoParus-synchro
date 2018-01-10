@@ -969,6 +969,9 @@
 					elseIf DogovorZaima then
 						executive = "6062 ТУХВАТУЛЛИНА"                'ТУХВАТУЛЛИНА М.Ф. ведет договора займов, НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "финансовый отдел"
 						subdiv = "НкТЭЦ.13.18"
+					elseif nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Мартынова Оксана Николаевна" then
+						executive = "5761 МАРТЫНОВА О.Н."                'Мартынова О.Н. числится в СПЛ, но фактически работает в ОПК
+						subdiv = "НкТЭЦ.13.09"
 					else
 						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 and DISMISS_DATE is NULL order by RN DESC"        'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
 						Query.Open
@@ -1051,9 +1054,9 @@
 								MyFile.Write("	INFO "&now()&vbTab&" Договору с GUID ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") автоматически присвоен номер: "&doc_pref&"-"&doc_numb&"."&vbNewLine)
 							end if
 							
-							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & ". Начать отладку?" & chr(13) & chr(13)
+							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & ". Продолжить загрузку или прервать и начать отладку (Отмена)?" & chr(13) & chr(13)
 							Desc=InputBox(sbuf, vbOKCancel)
-							If Desc = 1 then
+							If Desc = 0 then
 								Wscript.Echo
 							end if
 						
@@ -1957,26 +1960,45 @@ End Function
 
 Function GetContractSubdivPref(subdiv)
 	select case subdiv
-		Case "НкТЭЦ.13.08"
-		doc_pref2 = "010"
+	
+		Case "НкТЭЦ.01"
+		doc_pref2 = "374"
+	
+		Case "НкТЭЦ.02"
+		doc_pref2 = "301"
 		
-		Case "НкТЭЦ.22"
-		doc_pref2 = "090"
+		Case "НкТЭЦ.03"
+		doc_pref2 = "314"
 		
-		Case "НкТЭЦ.13.03"
-		doc_pref2 = "101"
+		Case "НкТЭЦ.04"
+		doc_pref2 = "379"
+		
+		Case "НкТЭЦ.05"
+		doc_pref2 = "328"
+		
+		Case "НкТЭЦ.06"
+		doc_pref2 = "321"
+				
+		Case "НкТЭЦ.07"
+		doc_pref2 = "361"
+		
+		Case "НкТЭЦ.08"
+		doc_pref2 = "147"
+		
+		Case "НкТЭЦ.11"
+		doc_pref2 = "398"
 		
 		Case "НкТЭЦ.13.02"
 		doc_pref2 = "102"
 		
-		Case "НкТЭЦ.13.12.02"
-		doc_pref2 = "106"
+		Case "НкТЭЦ.13.03"
+		doc_pref2 = "101"
+		
+		Case "НкТЭЦ.13.04"
+		doc_pref2 = "248"
 		
 		Case "НкТЭЦ.13.05"
 		doc_pref2 = "107"
-		
-		Case "НкТЭЦ.13.18"
-		doc_pref2 = "109"
 		
 		Case "НкТЭЦ.13.06"
 		doc_pref2 = "110"
@@ -1984,68 +2006,56 @@ Function GetContractSubdivPref(subdiv)
 		Case "НкТЭЦ.13.07"
 		doc_pref2 = "112"
 		
-		Case "НкТЭЦ.15"
-		doc_pref2 = "113"
-		
-		Case "НкТЭЦ.13.15"
-		doc_pref2 = "115"
-		
-		Case "НкТЭЦ.13.11"
-		doc_pref2 = "118"
-		
-		Case "НкТЭЦ.13.10"
-		doc_pref2 = "119"
-		
-		Case "НкТЭЦ.08"
-		doc_pref2 = "147"
-		
-		Case "НкТЭЦ.23"
-		doc_pref2 = "161"
+		Case "НкТЭЦ.13.08"
+		doc_pref2 = "010"
 		
 		Case "НкТЭЦ.13.09"
 		doc_pref2 = "237"
 		
-		Case "НкТЭЦ.13.04"
-		doc_pref2 = "248"
+		Case "НкТЭЦ.13.10"
+		doc_pref2 = "119"
+		
+		Case "НкТЭЦ.13.11"
+		doc_pref2 = "118"
+		
+		Case "НкТЭЦ.13.12.02"
+		doc_pref2 = "106"
 		
 		Case "НкТЭЦ.13.13"
 		doc_pref2 = "251"
 		
+		Case "НкТЭЦ.13.15"
+		doc_pref2 = "115"
+		
+		Case "НкТЭЦ.13.16"
+		doc_pref2 = "288"
+		
+		Case "НкТЭЦ.13.18"
+		doc_pref2 = "109"
+		
 		Case "НкТЭЦ.14"
 		doc_pref2 = "328м"
 		
-		Case "НкТЭЦ.02"
-		doc_pref2 = "301"
+		Case "НкТЭЦ.15"
+		doc_pref2 = "113"
 		
-		Case "НкТЭЦ.03"
-		doc_pref2 = "314"
-		
-		Case "НкТЭЦ.06"
-		doc_pref2 = "321"
-		
-		Case "НкТЭЦ.05"
-		doc_pref2 = "328"
-		
-		Case "НкТЭЦ.07"
-		doc_pref2 = "361"
-		
-		Case "НкТЭЦ.01"
-		doc_pref2 = "374"
-		
-		Case "НкТЭЦ.04"
-		doc_pref2 = "379"
-		
-		Case "НкТЭЦ.21"
-		doc_pref2 = "115м"
+		Case "НкТЭЦ.19"
+		doc_pref2 = "103"
 		
 		Case "НкТЭЦ.20"
 		doc_pref2 = "023"
 		
-		Case "НкТЭЦ.11"
-		doc_pref2 = "398"
+		Case "НкТЭЦ.21"
+		doc_pref2 = "115м"
 		
-		Case "НкТЭЦ.19"
-		doc_pref2 = "103"
+		Case "НкТЭЦ.22"
+		doc_pref2 = "090"		
+						
+		Case "НкТЭЦ.23"
+		doc_pref2 = "161"
+		
+		Case "НкТЭЦ.24"
+		doc_pref2 = "091"
 		
 		Case "Профком"
 		doc_pref2 = "707"
