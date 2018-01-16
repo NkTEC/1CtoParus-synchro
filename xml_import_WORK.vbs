@@ -1055,8 +1055,8 @@
 							end if
 							
 							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & ". Продолжить загрузку или прервать и начать отладку (Отмена)?" & chr(13) & chr(13)
-							Desc=InputBox(sbuf, vbOKCancel)
-							If Desc = 0 then
+							Desc=MsgBox(sbuf, vbOKCancel)
+							If Desc = 2 then
 								Wscript.Echo
 							end if
 						
@@ -2037,7 +2037,7 @@ Function GetContractSubdivPref(subdiv)
 		doc_pref2 = "328м"
 		
 		Case "НкТЭЦ.15"
-		doc_pref2 = "113"
+		doc_pref2 = "381"
 		
 		Case "НкТЭЦ.19"
 		doc_pref2 = "103"
