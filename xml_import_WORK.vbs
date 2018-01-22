@@ -1925,7 +1925,7 @@ Function GetFaceAccCat(subdiv)
 		CatRN = 4470564
 		
 		Case "НкТЭЦ.15"
-		CatRN = 4470515
+		CatRN = 4472720
 		
 		Case "НкТЭЦ.17"
 		CatRN = 12436655
@@ -1938,6 +1938,9 @@ Function GetFaceAccCat(subdiv)
 		
 		Case "НкТЭЦ.21"
 		CatRN = 17555197
+		
+		Case "НкТЭЦ.22"
+		CatRN = 4472720
 		
 		Case "НкТЭЦ.23"
 		CatRN = 4472622
