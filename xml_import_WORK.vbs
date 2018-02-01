@@ -154,7 +154,7 @@
 					T_Agn_error = True
 					MyFile.Write(DoubledAgentsString)
 				elseIf agncounter=1 Then
-					MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - обновляю данные контрагента."&vbNewLine)
+					'MyFile.Write("INFO "&now()&vbTab&" В Парус найден контрагент с кодом SAP "&SAPcode&" ("&nodeNode.selectSingleNode("Наименование").text&") - обновляю данные контрагента."&vbNewLine)
 					RN					= CaQuery.FieldByname("RN").value
 					ECONCODE			= CaQuery.FieldByname("ECONCODE").value
 					If nodeNode.selectSingleNode("ОКПО").text = "" then
@@ -422,7 +422,7 @@
 				StoredProc.ParamByName("sCODE").value="БАНК_"&nodeNode.selectSingleNode("БИК").text
 				StoredProc.ExecProc
 			else
-				MyFile.Write("INFO "&now()&vbTab&" В Парус найден банк с кодом БИК "&nodeNode.selectSingleNode("БИК").text&" ("&nodeNode.selectSingleNode("Наименование").text&") - обновляю существующий банк."&vbNewLine)
+				'MyFile.Write("INFO "&now()&vbTab&" В Парус найден банк с кодом БИК "&nodeNode.selectSingleNode("БИК").text&" ("&nodeNode.selectSingleNode("Наименование").text&") - обновляю существующий банк."&vbNewLine)
 				bAgnQuery = Query
 				bAgnQuery.SQL.Text="select * from agnlist where RN='"&BankQuery.FieldByname("AGNRN").value&"'"
 				bAgnQuery.Open
@@ -660,7 +660,7 @@
 						REM 'StoredProc.ExecProc
 						Query.Close
 					else
-						MyFile.Write("INFO "&now()&vbTab&" В Парус найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - обновляю существующий счет."&vbNewLine)
+						'MyFile.Write("INFO "&now()&vbTab&" В Парус найден банковский счет с номером "&nodeNode.selectSingleNode("НомерСчета").text&"  - обновляю существующий счет."&vbNewLine)
 
 						account_rn = Query.FieldByname("RN").value
 
@@ -768,7 +768,7 @@
 		MyFile.Write("INFO "&now()&vbTab&" В текущей выгрузке на найдено информации о банковских счетах."&vbNewLine)
 	end if
 
-	'НАХОДИМ УЗЕЛ "ДОГОВОРА"'
+	'НАХОДИМ УЗЕЛ "ДОГОВОРЫ"'
 	Set Contracts = xmlParser.selectNodes("//ДоговорыКонтрагентов/Строки")
 	If Contracts.length > 0 then
 		object_counter = 0
@@ -815,7 +815,64 @@
 				If Query.IsEmpty then
 '''''''''''''''''''''УДАЛИТЬ БЛОК ПРИСВОЕНИЯ НОМЕРА ПО КОММЕНТАРИЮ, С 01.01.2018 ДЕЙСТВУЕТ АВТОМАТИЧЕСКАЯ НУМЕРАЦИЯ
 					'ПОДГОТОВИМ ЗАГЛУШКИ НА СЛУЧАЙ, ЕСЛИ НЕ УДАСТСЯ РАЗОБРАТЬ КОММЕНТАРИЙ
-					doc_type                = "0000"
+					' doc_type                = "0000"
+					' doc_pref                = date&"/"&timer
+					''ПОЛУЧИМ СВОБОДНЫЙ ПОРЯДКОВЫЙ НОМЕР
+					' StoredProc.StoredProcName="P_CONTRACTS_GETNEXTNUMB"
+					' StoredProc.ParamByName("NCOMPANY").value=42903
+					' StoredProc.ParamByName("SJUR_PERS").value="НК ТЭЦ"
+					' StoredProc.ParamByName("DDOC_DATE").value=ConvDate(nodeNode.selectSingleNode("Дата").text)
+					' StoredProc.ParamByName("SDOC_TYPE").value=doc_type
+					' StoredProc.ParamByName("SDOC_PREF").value=doc_pref
+					' StoredProc.ExecProc
+					' doc_numb                        = StoredProc.ParamByName("SDOC_NUMB").value
+					' CONTRACT_NEXTNUMB        = StoredProc.ParamByName("SDOC_NUMB").value
+
+					''ЕСЛИ КОММЕНТАРИЙ ЗАПОЛНЕН - ПОПРОБУЕМ ВЫТАЩИТЬ ИЗ НЕГО ДАННЫЕ ПО РАНЕЕ ЗАГРУЖЕННОМУ ДОГОВОРУ					
+					' comment = nodeNode.selectSingleNode("Комментарий").text
+					' If not len(comment)=0 then
+						''РАСПИЛИМ КОММЕНТАРИЙ НА СОСТАВНЫЕ ЧАСТИ: ТИП, ПРЕФИКС И НОМЕР, ПРОВЕРЯЯ КОЛИЧЕСТВО СОСТАВНЫХ ЧАСТЕЙ						
+						' comment_array                        = Split(LTrim(comment), ",")
+						' if UBound(comment_array)>0 then
+							' contract_complex_number        = RTrim(LTrim(comment_array(1)))
+							' contract_number_array        = Split(contract_complex_number, "-")
+							' if UBound(contract_number_array)>0 then
+								' doc_type                = comment_array(0)
+								' doc_pref                = contract_number_array(0)
+								' doc_numb                = contract_number_array(1)
+
+								''НАЙДЕМ КОД ТИПА ДОКУМЕНТА
+								' Query.SQL.Text = "select RN from DOCTYPES where DOCCODE='"&doc_type&"'"
+								' Query.Open
+								' doc_type_RN        = Query.FieldByname("RN").value
+								' Query.Close
+
+								''НАЙДЕМ ДОГОВОР ПО ТИПУ, ПРЕФИКСУ И НОМЕРУ
+								' If not doc_numb="" then
+									' Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '%"&doc_numb&"'"
+									' Query.Open
+									' If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
+										' newContract = False
+										' old_RN = Query.FieldByname("RN").value                'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
+									' else
+										' newContract = True
+									' end if
+									' Query.Close
+								' else
+									' doc_numb = CONTRACT_NEXTNUMB
+									' newContract = True
+								' end if
+							' else
+								' newContract = True
+							' end if
+						' else
+							' newContract = True
+						' end if
+					' else
+						' newContract = True
+					' end If
+''''''''''''''''''''УДАЛИТЬ БЛОК ПРИСВОЕНИЯ НОМЕРА ПО КОММЕНТАРИЮ, С 01.01.2018 ДЕЙСТВУЕТ АВТОМАТИЧЕСКАЯ НУМЕРАЦИЯ			
+					doc_type    = "0000"
 					doc_pref                = date&"/"&timer
 					'ПОЛУЧИМ СВОБОДНЫЙ ПОРЯДКОВЫЙ НОМЕР
 					StoredProc.StoredProcName="P_CONTRACTS_GETNEXTNUMB"
@@ -826,53 +883,7 @@
 					StoredProc.ParamByName("SDOC_PREF").value=doc_pref
 					StoredProc.ExecProc
 					doc_numb                        = StoredProc.ParamByName("SDOC_NUMB").value
-					CONTRACT_NEXTNUMB        = StoredProc.ParamByName("SDOC_NUMB").value
-
-					'ЕСЛИ КОММЕНТАРИЙ ЗАПОЛНЕН - ПОПРОБУЕМ ВЫТАЩИТЬ ИЗ НЕГО ДАННЫЕ ПО РАНЕЕ ЗАГРУЖЕННОМУ ДОГОВОРУ					
-					comment = nodeNode.selectSingleNode("Комментарий").text
-					If not len(comment)=0 then
-						'РАСПИЛИМ КОММЕНТАРИЙ НА СОСТАВНЫЕ ЧАСТИ: ТИП, ПРЕФИКС И НОМЕР, ПРОВЕРЯЯ КОЛИЧЕСТВО СОСТАВНЫХ ЧАСТЕЙ						
-						comment_array                        = Split(LTrim(comment), ",")
-						if UBound(comment_array)>0 then
-							contract_complex_number        = RTrim(LTrim(comment_array(1)))
-							contract_number_array        = Split(contract_complex_number, "-")
-							if UBound(contract_number_array)>0 then
-								doc_type                = comment_array(0)
-								doc_pref                = contract_number_array(0)
-								doc_numb                = contract_number_array(1)
-
-								'НАЙДЕМ КОД ТИПА ДОКУМЕНТА
-								Query.SQL.Text = "select RN from DOCTYPES where DOCCODE='"&doc_type&"'"
-								Query.Open
-								doc_type_RN        = Query.FieldByname("RN").value
-								Query.Close
-
-								'НАЙДЕМ ДОГОВОР ПО ТИПУ, ПРЕФИКСУ И НОМЕРУ
-								If not doc_numb="" then
-									Query.SQL.Text = "select RN from contracts where doc_type='"&doc_type_RN&"' and DOC_PREF like '%"&doc_pref&"' and DOC_NUMB like '%"&doc_numb&"'"
-									Query.Open
-									If not Query.IsEmpty and (nodeNode.selectSingleNode("БазовыйДоговор").text="00000000-0000-0000-0000-000000000000" or len(nodeNode.selectSingleNode("БазовыйДоговор").text)=0) then
-										newContract = False
-										old_RN = Query.FieldByname("RN").value                'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
-									else
-										newContract = True
-									end if
-									Query.Close
-								else
-									doc_numb = CONTRACT_NEXTNUMB
-									newContract = True
-								end if
-							else
-								newContract = True
-							end if
-						else
-							newContract = True
-						end if
-					else
-						newContract = True
-					end If
-''''''''''''''''''''УДАЛИТЬ БЛОК ПРИСВОЕНИЯ НОМЕРА ПО КОММЕНТАРИЮ, С 01.01.2018 ДЕЙСТВУЕТ АВТОМАТИЧЕСКАЯ НУМЕРАЦИЯ					
-''''''''''''''''''''newContract = True
+					newContract = True
 				else
 					newContract = False
 					old_RN = Query.FieldByname("UNIT_RN").value                'ЗАПОМНИМ УИН ДЛЯ СУЩЕСТВУЮЩЕГО ДОГОВОРА
@@ -1054,7 +1065,7 @@
 								MyFile.Write("	INFO "&now()&vbTab&" Договору с GUID ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") автоматически присвоен номер: "&doc_pref&"-"&doc_numb&"."&vbNewLine)
 							end if
 							
-							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & ". Продолжить загрузку или прервать и начать отладку (Отмена)?" & chr(13) & chr(13)
+							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & " с датой начала действия "&ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)&". Продолжить загрузку или прервать и начать отладку (Отмена)?" & chr(13) & chr(13)
 							Desc=MsgBox(sbuf, vbOKCancel)
 							If Desc = 2 then
 								Wscript.Echo
@@ -2041,6 +2052,9 @@ Function GetContractSubdivPref(subdiv)
 		
 		Case "НкТЭЦ.15"
 		doc_pref2 = "381"
+		
+		Case "НкТЭЦ.17"
+		doc_pref2 = "110"
 		
 		Case "НкТЭЦ.19"
 		doc_pref2 = "103"
