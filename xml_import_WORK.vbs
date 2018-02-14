@@ -134,7 +134,7 @@
 					StoredProc.ParamByName("NUM_VAL").value=NULL
 					StoredProc.ExecProc
 				end If
-			else        'найдена запись с нашим кодом SAP
+			elseif not Query.IsEmpty and not SAPcode="0000112063" and SAPcode="не выполнять синхронизацию контрагентов" then        'найдена запись с нашим кодом SAP
 				' НАЙДЕМ КОНТРАГЕНТА В ТАБЛИЦЕ ПО RN
 				CaQuery=Query
 				CaQuery.Sql.Text = "select * from AGNLIST where RN='"&Query.FieldByname("UNIT_RN").value&"'"
@@ -581,6 +581,11 @@
 		'ПЕРЕБИРАЕМ СПИСОК СЧЕТОВ
 		object_counter=0
 		For Each nodeNode In Accounts
+		
+			If nodeNode.selectSingleNode("ПометкаУдаления").text="true" then
+				Wscript.Echo "123"
+			end if
+			
 			account_rn                = NULL
 			AccQueryIsEmpty        = NULL
 			agnlist_rn                = NULL
@@ -807,6 +812,8 @@
 			else
 				If Query.IsEmpty and not InStr(nodeNode.selectSingleNode("ТипДоговора").text, "займ")=0 then
 					DogovorZaima = True
+				else
+					DogovorZaima = False
 				end if
 
 				'НАЙДЕМ ДОГОВОР ПО ССЫЛКЕ 1С
@@ -874,6 +881,20 @@
 ''''''''''''''''''''УДАЛИТЬ БЛОК ПРИСВОЕНИЯ НОМЕРА ПО КОММЕНТАРИЮ, С 01.01.2018 ДЕЙСТВУЕТ АВТОМАТИЧЕСКАЯ НУМЕРАЦИЯ			
 					doc_type    = "0000"
 					doc_pref                = date&"/"&timer
+					
+					ext_numb_array = Split(Trim(nodeNode.selectSingleNode("ВнешРегНомер").text), "-")
+					If UBound(ext_numb_array) > 2 then
+						ext_numb_3 = ext_numb_array(2)
+						ext_numb_4 = ext_numb_array(3)
+						If ext_numb_3 = "NGCAMTEC" then
+							doc_type = "ДОГ_КП"
+						elseIf ext_numb_4 = "NGCAMTEC" then
+							doc_type = "ДОГ_ПОКУП"
+						end if
+					end if
+					
+					
+					
 					'ПОЛУЧИМ СВОБОДНЫЙ ПОРЯДКОВЫЙ НОМЕР
 					StoredProc.StoredProcName="P_CONTRACTS_GETNEXTNUMB"
 					StoredProc.ParamByName("NCOMPANY").value=42903
@@ -938,7 +959,11 @@
 								Query.SQL.Text = "select STRCODE from AGNACC where AGNRN='"&agn_rn&"'"
 								Query.Open
 								agn_strcode = Query.FieldByname("STRCODE").value
-								note = "В ДОГОВОРЕ УКАЗАН СЛУЧАЙНЫЙ БАНКОВСКИЙ СЧЕТ КОНТРАГЕНТА - ВЫБЕРИТЕ ПРАВИЛЬНЫЙ СЧЕТ!!!"
+								if nodeNode.selectSingleNode("ВидДоговора").text = "С покупателем" or nodeNode.selectSingleNode("ВидДоговора").text = "СПокупателем" then
+									note = nodeNode.selectSingleNode("ПредметДоговора").text
+								else
+									note = "В ДОГОВОРЕ УКАЗАН СЛУЧАЙНЫЙ БАНКОВСКИЙ СЧЕТ КОНТРАГЕНТА - ВЫБЕРИТЕ ПРАВИЛЬНЫЙ СЧЕТ!!!"
+								end if
 							end if
 							Query.Close
 						else
@@ -972,30 +997,35 @@
 					else
 						INOUT_SIGN = 1
 					end if
-
+					
+					'ПОЛУЧИМ СВЕДЕНИЯ ОБ ИНИЦИАТОРЕ И ПОДРАЗДЕЛЕНИИ
+					Executive_Subdiv_Array = GetExecutiveSubdiv(nodeNode.selectSingleNode("ОтветственныйИсполнитель").text, DogovorZaima)
+					executive = Executive_Subdiv_Array(0)
+					subdiv = Executive_Subdiv_Array(1)
+										
 					'ПОЛУЧИМ КОД ПОДРАЗДЕЛЕНИЯ ПО ЦЕПОЧКЕ: "ФИО ИСПОЛНИТЕЛЯ -> УИН КОНТРАГЕНТА -> УИН СОТРУДНИКА -> ЗАПИСЬ О ТЕКУЩЕЙ ДОЛЖНОСТИ -> УИН ПОДРАЗДЕЛЕНИЯ -> КОД ПОДРАЗДЕЛЕНИЯ"
-					if nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Гатина Гузель Илдаровна" then
-						executive = "0001 ГАТИНА Г.И."                'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
-						subdiv = "НкТЭЦ.13.15"
-					elseIf DogovorZaima then
-						executive = "6062 ТУХВАТУЛЛИНА"                'ТУХВАТУЛЛИНА М.Ф. ведет договора займов, НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "финансовый отдел"
-						subdiv = "НкТЭЦ.13.18"
-					elseif nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Мартынова Оксана Николаевна" then
-						executive = "5761 МАРТЫНОВА О.Н."                'Мартынова О.Н. числится в СПЛ, но фактически работает в ОПК
-						subdiv = "НкТЭЦ.13.09"
-					else
-						Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 and DISMISS_DATE is NULL order by RN DESC"        'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
-						Query.Open
-						executive                = Query.FieldByname("AGNABBR").value
-						Query.SQL.Text = "select RN from CLNPERSONS where PERS_AGENT='"&Query.FieldByname("RN").value&"'"
-						Query.Open
-						Query.SQL.Text = "select DEPTRN from CLNPSPFM where persrn='"&Query.FieldByname("RN").value&"' and endeng is null"
-						Query.Open
-						Query.SQL.Text = "select CODE from INS_DEPARTMENT where rn='"&Query.FieldByname("DEPTRN").value&"'"
-						Query.Open
-						subdiv = Query.FieldByname("CODE").value
-						Query.Close
-					end if
+					' if nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Гатина Гузель Илдаровна" then
+						' executive = "0001 ГАТИНА Г.И."                'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
+						' subdiv = "НкТЭЦ.13.15"
+					' elseIf DogovorZaima then
+						' executive = "6062 ТУХВАТУЛЛИНА"                'ТУХВАТУЛЛИНА М.Ф. ведет договора займов, НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "финансовый отдел"
+						' subdiv = "НкТЭЦ.13.18"
+					' elseif nodeNode.selectSingleNode("ОтветственныйИсполнитель").text="Мартынова Оксана Николаевна" then
+						' executive = "5761 МАРТЫНОВА О.Н."                'Мартынова О.Н. числится в СПЛ, но фактически работает в ОПК
+						' subdiv = "НкТЭЦ.13.09"
+					' else
+						' Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&nodeNode.selectSingleNode("ОтветственныйИсполнитель").text&"%') and not b.crn=2503442 and EMP=1 and DISMISS_DATE is NULL order by RN DESC"        'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
+						' Query.Open
+						' executive                = Query.FieldByname("AGNABBR").value
+						' Query.SQL.Text = "select RN from CLNPERSONS where PERS_AGENT='"&Query.FieldByname("RN").value&"'"
+						' Query.Open
+						' Query.SQL.Text = "select DEPTRN from CLNPSPFM where persrn='"&Query.FieldByname("RN").value&"' and endeng is null"
+						' Query.Open
+						' Query.SQL.Text = "select CODE from INS_DEPARTMENT where rn='"&Query.FieldByname("DEPTRN").value&"'"
+						' Query.Open
+						' subdiv = Query.FieldByname("CODE").value
+						' Query.Close
+					' end if
 										
 					'ПОЛУЧИМ НАИМЕНОВАНИЕ ВАЛЮТЫ ПО ЕЕ КОДУ
 					Query.SQL.Text = "select INTCODE from curnames where curcode='"&nodeNode.selectSingleNode("ВалютаВзаиморасчетов").text&"'"
@@ -1019,10 +1049,10 @@
 					else
 
 						'ПОЛУЧИМ ТИП СУММЫ И ЛСЧЕТА ДЛЯ ЭТАПА
-						If nodeNode.selectSingleNode("ВидДоговора").text = "С поставщиком" then
+						If nodeNode.selectSingleNode("ВидДоговора").text = "С поставщиком" or nodeNode.selectSingleNode("ВидДоговора").text = "СПоставщиком" then
 							sumType = 1
 							acc_kind = 0
-						elseif nodeNode.selectSingleNode("ВидДоговора").text = "С покупателем" then
+						elseif nodeNode.selectSingleNode("ВидДоговора").text = "С покупателем" or nodeNode.selectSingleNode("ВидДоговора").text = "СПокупателем" then
 							sumType = 2
 							acc_kind = 1
 						else
@@ -1065,11 +1095,11 @@
 								MyFile.Write("	INFO "&now()&vbTab&" Договору с GUID ("&trim(nodeNode.selectSingleNode("Ссылка").text)&") автоматически присвоен номер: "&doc_pref&"-"&doc_numb&"."&vbNewLine)
 							end if
 							
-							sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & " с датой начала действия "&ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)&". Продолжить загрузку или прервать и начать отладку (Отмена)?" & chr(13) & chr(13)
-							Desc=MsgBox(sbuf, vbOKCancel)
-							If Desc = 2 then
-								Wscript.Echo
-							end if
+							' sbuf="Создается новый договор №" & doc_pref & "-" & doc_numb & " с датой начала действия "&ConvDate(nodeNode.selectSingleNode("СрокДействияС").text)&". Продолжить загрузку или прервать и начать отладку (Отмена)?" & chr(13) & chr(13)
+							' Desc=MsgBox(sbuf, vbOKCancel)
+							' If Desc = 2 then
+								' Wscript.Echo
+							' end if
 						
 							'СОЗДАЕМ ЗАПИСЬ О НОВОМ ДОГОВОРЕ
 							StoredProc.StoredProcName="P_CONTRACTS_INSERT"
@@ -1256,6 +1286,11 @@
 								Query.Open
 								If Query.IsEmpty then
 									MyFile.Write(vbTab&"INFO "&now()&vbTab&" В Парус найден родительский договор с кодом 1С "&nodeNode.selectSingleNode("БазовыйДоговор").text&" - завожу новый этап"&vbNewLine)
+									
+									'ПОЛУЧИМ СВЕДЕНИЯ ОБ ИНИЦИАТОРЕ И ПОДРАЗДЕЛЕНИИ
+									Executive_Subdiv_Array = GetExecutiveSubdiv(nodeNode.selectSingleNode("ОтветственныйИсполнитель").text, DogovorZaima)
+									executive = Executive_Subdiv_Array(0)
+									subdiv = Executive_Subdiv_Array(1)
 
 									'ПОЛУЧИМ ПРЕФИКС НУМЕРАЦИИ ЭТАПА
 									Query.SQL.Text="select DOC_PREF, DOC_NUMB from CONTRACTS where RN='"&UNIT_RN&"'"
@@ -1992,7 +2027,7 @@ Function GetContractSubdivPref(subdiv)
 		
 		Case "НкТЭЦ.06"
 		doc_pref2 = "321"
-				
+		
 		Case "НкТЭЦ.07"
 		doc_pref2 = "361"
 		
@@ -2066,8 +2101,8 @@ Function GetContractSubdivPref(subdiv)
 		doc_pref2 = "115м"
 		
 		Case "НкТЭЦ.22"
-		doc_pref2 = "090"		
-						
+		doc_pref2 = "090"
+		
 		Case "НкТЭЦ.23"
 		doc_pref2 = "161"
 		
@@ -2079,3 +2114,31 @@ Function GetContractSubdivPref(subdiv)
 	end select
 	GetContractSubdivPref = doc_pref2
 end function
+
+Function GetExecutiveSubdiv(xmlExecutive, DogovorZaima)
+	'ПОЛУЧИМ КОД ПОДРАЗДЕЛЕНИЯ ПО ЦЕПОЧКЕ: "ФИО ИСПОЛНИТЕЛЯ -> УИН КОНТРАГЕНТА -> УИН СОТРУДНИКА -> ЗАПИСЬ О ТЕКУЩЕЙ ДОЛЖНОСТИ -> УИН ПОДРАЗДЕЛЕНИЯ -> КОД ПОДРАЗДЕЛЕНИЯ"
+	if xmlExecutive="Гатина Гузель Илдаровна" then
+		executive = "0001 ГАТИНА Г.И."                'ГАТИНА Г.И. - ПРОФКОМ, ЕЕ НЕТ СРЕДИ СОТРУДНИКОВ ТЭЦ - НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "ОТДЕЛ КАДРОВ"
+		subdiv = "НкТЭЦ.13.15"
+	elseIf DogovorZaima then
+		executive = "6062 ТУХВАТУЛЛИНА"                'ТУХВАТУЛЛИНА М.Ф. ведет договора займов, НАЗНАЧЕМ ПОДРАЗДЕЛЕНИЕ "финансовый отдел"
+		subdiv = "НкТЭЦ.13.18"
+	elseif xmlExecutive="Мартынова Оксана Николаевна" then
+		executive = "5761 МАРТЫНОВА О.Н."                'Мартынова О.Н. числится в СПЛ, но фактически работает в ОПК
+		subdiv = "НкТЭЦ.13.09"
+	else
+		Query.SQL.Text = "select a.AGNABBR, a.AGNNAME, a.RN, b.code from agnlist a, CLNPERSONS b where a.rn=b.pers_agent and agnname like upper('%"&xmlExecutive&"%') and not b.crn=2503442 and EMP=1 and DISMISS_DATE is NULL order by RN DESC"        'ОТСЕИМ НЕ СОТРУДНИКОВ И СОТРУДНИКОВ ИЗ ПАПКИ УВОЛЕННЫЕ
+		Query.Open
+		executive      = Query.FieldByname("AGNABBR").value
+		Query.SQL.Text = "select RN from CLNPERSONS where PERS_AGENT='"&Query.FieldByname("RN").value&"'"
+		Query.Open
+		Query.SQL.Text = "select DEPTRN from CLNPSPFM where persrn='"&Query.FieldByname("RN").value&"' and endeng is null"
+		Query.Open
+		Query.SQL.Text = "select CODE from INS_DEPARTMENT where rn='"&Query.FieldByname("DEPTRN").value&"'"
+		Query.Open
+		subdiv = Query.FieldByname("CODE").value
+		Query.Close
+	end if
+	
+	GetExecutiveSubdiv	= Array(executive, subdiv)
+end Function
